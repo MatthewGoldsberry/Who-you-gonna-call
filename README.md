@@ -8,20 +8,6 @@ Time of Meetings: After class on Wednesdays
 
 Coordination and Tracking: High level and communication SMS
 
-## Early Layout Sketches
-
-At this prelimiary stage we have 2 different ideas for the layout of the visualizations as seen below:
-
-### Option 1: Two Column Approach
-
-<img width="1127" height="715" alt="image" src="https://github.com/user-attachments/assets/d11e3ebb-7092-4989-b45d-7684f78c15d6" />
-
-### Option 2: One Column Approach
-
-<img width="1116" height="692" alt="image" src="https://github.com/user-attachments/assets/1428d49f-d7fb-4126-9e53-893f93072878" />
-
-> **NOTE** In the event the bar charts are two small to collect fine details, we might add an interaciton where if you click an expand button on them, the will flip places with the map to take up more visual room. 
-
 ## Early Brainstorming 
 
 [Project Description](https://uc.instructure.com/courses/1828856/pages/project-2-who-you-gonna-call-3-1-1?module_item_id=78421809)
@@ -63,3 +49,18 @@ At this prelimiary stage we have 2 different ideas for the layout of the visuali
 
 * Maybe add more map views?
 * Add way to switch bar charts into main view and back 
+
+
+## Early Layout Sketches
+
+At this prelimiary stage we have 2 different ideas for the layout of the visualizations as seen below:
+
+### Option 1: Two Column Approach
+
+<img width="1142" height="719" alt="image" src="https://github.com/user-attachments/assets/2b6d9f43-29e8-4b2b-b638-1ec76cb7a29d" />
+
+### Option 2: One Column Approach
+
+<img width="1178" height="958" alt="image" src="https://github.com/user-attachments/assets/a3eb103b-2d28-4588-8c9b-83154f27fe7a" />
+
+> **NOTE** In the event the bar charts are two small to collect fine details, we might add an interaciton where if you click an expand button on them, the will flip places with the map to take up more visual room. 
