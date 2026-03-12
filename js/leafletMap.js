@@ -1,3 +1,9 @@
+/**
+ * Leaflet Visualization Implementation
+ */
+
+
+// definitions of the different map background sources adn their attributions
 const mapBackgrounds = {
     light: {link: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'},
     dark: {link: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'},
@@ -7,12 +13,15 @@ const mapBackgrounds = {
 };
 
 
+/**
+ * class representing a Leaflet Map with D3 SVG data points
+ */
 class LeafletMap {
 
   /**
-   * Class constructor with basic configuration
-   * @param {Object}
-   * @param {Array}
+   * class constructor with basic Leaflet Map configuration
+   * @param {Object} _config - configuration object containing the parent element selector
+   * @param {Array<Object>} _data - dataset to be visualized
    */
   constructor(_config, _data) {
     this.config = {
@@ -25,7 +34,7 @@ class LeafletMap {
   }
 
   /**
-   * We initialize scales/axes and append static elements, such as axis titles.
+   * initialize the Leaflet Map and D3 data points
    */
   initVis() {
     let vis = this;
@@ -70,13 +79,13 @@ class LeafletMap {
         .domain(['STANDARD', 'PRIORITY', 'HAZARDOUS', 'EMERGENCY'])
         .range(['#94a3b8', '#fbbf24', '#f97316', '#dc2626']);
 
-    // temporary solution of just finding 17 distinct colors 
+    // 17-color high-contrast palette (taken from: https://sashamaps.net/docs/resources/20-colors/)
     const distinctColors = [
       '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', 
       '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#aaffc3', '#808000', '#ffd8b1'
     ];
 
-    // with the distinct colors, create the scale for departments and neighborhoods
+    // create the categorical scales for departments and neighborhoods
     vis.colorScaleAgency = d3.scaleOrdinal(distinctColors);
     vis.colorScaleNeighborhood = d3.scaleOrdinal(distinctColors);
 
@@ -98,8 +107,8 @@ class LeafletMap {
       .attr("stroke", "black")
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
-      // function to add mouseover event
       .on('mouseover', function (event, d) { 
+        // function to add mouseover event
         d3.select(this).transition() 
           .duration('150')
           .attr("fill", "red")
@@ -142,6 +151,9 @@ class LeafletMap {
 
   }
 
+  /**
+   *  update the visualization 
+   */
   updateVis() {
     let vis = this;
 
@@ -157,6 +169,11 @@ class LeafletMap {
       .attr("r", vis.dynamicRadius);
   }
 
+  /**
+   * determines the appropriate fill color for a given data point based on the current color by state
+   * @param {Object} d 
+   * @returns hex color code or valid CSS color string
+   */
   getColor(d) {
     let vis = this;
     if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
@@ -166,6 +183,10 @@ class LeafletMap {
     return "steelblue";
   }
 
+  /**
+   * swaps Leaflet base tile layer
+   * @param {string} layerType -- key corresponding to the desired map in the mapBackgrounds dictionary
+   */
   changeBackground(layerType) {
     let vis = this;
 
