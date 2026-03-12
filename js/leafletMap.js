@@ -10,6 +10,7 @@ class LeafletMap {
       parentElement: _config.parentElement,
     }
     this.data = _data;
+    this.colorBy = 'neighborhood';
     this.initVis();
   }
 
@@ -18,6 +19,14 @@ class LeafletMap {
    */
   initVis() {
     let vis = this;
+
+    // calculate the time to update in days, defaulting to 0
+    vis.data.forEach(d => {
+      const created = new Date(d.DATE_CREATED);
+      const updated = new Date(d.DATE_LAST_UPDATE);
+      d.timeToUpdate = (updated - created) / (1000 * 60 * 60 * 24);
+      if (isNaN(d.timeToUpdate) || d.timeToUpdate < 0) d.timeToUpdate = 0;
+    });
 
     // stadia alidade smooth Dark
     vis.stadiaUrl = 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.{ext}'
@@ -48,11 +57,34 @@ class LeafletMap {
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane)
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
-    //these are the city locations, displayed as a set of dots 
+    // TODO some color theory work needs to be done here
+
+    // create color scale for the priority of request
+    vis.colorScalePriority = d3.scaleOrdinal()
+        .domain(['STANDARD', 'PRIORITY', 'HAZARDOUS', 'EMERGENCY'])
+        .range(['#94a3b8', '#fbbf24', '#f97316', '#dc2626']);
+
+    // temporary solution of just finding 17 distinct colors 
+    const distinctColors = [
+      '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', 
+      '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#aaffc3', '#808000', '#ffd8b1'
+    ];
+
+    // with the distinct colors, create the scale for departments and neighborhoods
+    vis.colorScaleAgency = d3.scaleOrdinal(distinctColors);
+    vis.colorScaleNeighborhood = d3.scaleOrdinal(distinctColors);
+
+    // preprocess the times and create a color scale for time to update
+    const times = vis.data.map(d => d.timeToUpdate).sort(d3.ascending);
+    const timeCap = d3.quantile(times, 0.95) || 30; // there are some outliers that need removed for the scaling to work nicely
+    vis.colorScaleTime = d3.scaleSequential(t => d3.interpolateRdYlGn(1 - t)) // inverse reg-yellow-green scale
+        .domain([0, timeCap])
+        .clamp(true);
+
+    // these are the city locations, displayed as a set of dots 
     vis.Dots = vis.svg.selectAll('circle')
       .data(vis.data)
       .join('circle')
-      .attr("fill", "steelblue")
       .attr("stroke", "black")
       //Leaflet has to take control of projecting points. 
       //Here we are feeding the latitude and longitude coordinates to
@@ -91,7 +123,7 @@ class LeafletMap {
       .on('mouseleave', function () { //function to add mouseover event
         d3.select(this).transition() //D3 selects the object we have moused over in order to perform operations on it
           .duration('150') //how long we are transitioning between the two states (works like keyframes)
-          .attr("fill", "steelblue") //change the fill  TO DO- change fill again
+          .attr("fill", d => vis.getColor(d))  
           .attr('r', 3) //change radius
 
         d3.select('#tooltip').style('opacity', 0); // turn off the tooltip
@@ -112,13 +144,17 @@ class LeafletMap {
     vis.Dots
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
-      .attr("fill", "steelblue")
+      .attr("fill", d => vis.getColor(d))
       .attr("r", 3);
-
   }
 
-
-  renderVis() {
+  getColor(d) {
     let vis = this;
+    if (d === vis.data[0]) console.log("Current colorBy:", vis.colorBy, "Data Sample:", d);
+    if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
+    if (vis.colorBy === 'neighborhood') return vis.colorScaleNeighborhood(d.NEIGHBORHOOD);
+    if (vis.colorBy === 'priority') return vis.colorScalePriority(d.PRIORITY);
+    if (vis.colorBy === 'time') return vis.colorScaleTime(d.timeToUpdate);
+    return "steelblue";
   }
 }
