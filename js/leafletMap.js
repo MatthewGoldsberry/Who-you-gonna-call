@@ -39,10 +39,8 @@ class LeafletMap {
       layers: [vis.baseLayer]
     });
 
-    //if you stopped here, you would just have a map
-
-    //initialize svg for d3 to add to map
-    L.svg({ clickable: true }).addTo(vis.theMap)// we have to make the svg layer clickable
+    // initialize svg for d3 to add to map
+    L.svg({ clickable: true }).addTo(vis.theMap)
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane)
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
@@ -50,7 +48,7 @@ class LeafletMap {
     vis.Dots = vis.svg.selectAll('circle')
       .data(vis.data)
       .join('circle')
-      .attr("fill", "steelblue")  //---- TO DO- color by magnitude 
+      .attr("fill", "steelblue")
       .attr("stroke", "black")
       //Leaflet has to take control of projecting points. 
       //Here we are feeding the latitude and longitude coordinates to
@@ -70,9 +68,15 @@ class LeafletMap {
         d3.select('#tooltip')
           .style('opacity', 1)
           .style('z-index', 1000000)
-          // Format number with million and thousand separator
-          //***** TO DO- change this tooltip to show useful information about the quakes
-          .html(`<div class="tooltip-label">City: ${d.city}, Population ${d3.format(',')(d.population)}</div>`);
+          .html(`
+            <div class="tooltip-content">
+              <strong>Type:</strong> ${d.SR_TYPE}<br>
+              <strong>Description:</strong> ${d.SR_TYPE_DESC}<br>
+              <strong>Agency:</strong> ${d.DEPT_NAME}<br>
+              <strong>Date Called:</strong> ${d.DATE_CREATED}<br>
+              <strong>Last Updated:</strong> ${d.DATE_LAST_UPDATE}
+            </div>
+          `);
 
       })
       .on('mousemove', (event) => {
@@ -87,11 +91,11 @@ class LeafletMap {
           .attr("fill", "steelblue") //change the fill  TO DO- change fill again
           .attr('r', 3) //change radius
 
-        d3.select('#tooltip').style('opacity', 0);//turn off the tooltip
+        d3.select('#tooltip').style('opacity', 0); // turn off the tooltip
 
       })
 
-    //handler here for updating the map, as you zoom in and out           
+    // handler here for updating the map, as you zoom in and out           
     vis.theMap.on("zoomend", function () {
       vis.updateVis();
     });
@@ -101,16 +105,11 @@ class LeafletMap {
   updateVis() {
     let vis = this;
 
-    //want to see how zoomed in you are? 
-    // console.log(vis.map.getZoom()); //how zoomed am I?
-    //----- maybe you want to use the zoom level as a basis for changing the size of the points... ?
-
-
-    //redraw based on new zoom- need to recalculate on-screen position
+    // redraw based on new zoom- need to recalculate on-screen position
     vis.Dots
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
-      .attr("fill", "steelblue")  //---- TO DO- color by magnitude 
+      .attr("fill", "steelblue")
       .attr("r", 3);
 
   }
@@ -118,8 +117,5 @@ class LeafletMap {
 
   renderVis() {
     let vis = this;
-
-    //not using right now... 
-
   }
 }

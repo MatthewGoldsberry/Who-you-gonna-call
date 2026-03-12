@@ -1,3 +1,37 @@
+/* --- Base Page Configuration --- */
+
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: Arial, Helvetica, sans-serif;
+    background: white;
+}
+
+/* --- Tooltip Configuration --- */
+
+#tooltip-content {
+  background-color: white;
+  color: darkslategray;
+  font-family: Arial, Helvetica, sans-serif; 
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  padding: 12px 16px;
+  border: 1px solid lightgrey;
+  border-radius: 6px; 
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  pointer-events: none;
+}
+
+#tooltip-content strong {
+  font-weight: 700;
+  color: black;
+  margin-right: 4px;
+}
+
 #my-map {
   width: 75vw;
   height: 75vh;
