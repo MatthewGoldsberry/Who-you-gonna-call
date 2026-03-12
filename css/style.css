@@ -63,6 +63,70 @@ body {
   z-index: 1;
 }
 
+/* --- Floating Top-Left Controls --- */
+
+#map-controls-top-left {
+  position: absolute;
+  top: 15px;
+  left: 15px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dropdown-group {
+  display: flex;
+  align-items: center;
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid lightgrey;
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  overflow: hidden;
+  transition: all 0.2s ease;
+}
+
+.dropdown-group:hover {
+  background-color: white;
+  border-color: darkgrey;
+}
+
+.dropdown-label {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: black;
+  padding: 6px 4px 6px 10px;
+  white-space: nowrap;
+}
+
+.dropdown-select {
+  flex: 1;
+  border: none; 
+  background-color: transparent;
+  padding: 6px 10px 6px 2px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  color: darkslategray; 
+  cursor: pointer;
+  outline: none;
+}
+
+/* --- Floating Bottom-Left Note --- */
+
+#missing-data-note {
+  position: absolute;
+  bottom: 15px;
+  left: 15px;
+  z-index: 1000;
+  font-size: 11px;
+  color: #555;
+  background-color: rgba(255, 255, 255, 0.75);
+  padding: 4px 8px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+
 /* --- Chart Column --- */
 
 .chart-column {
