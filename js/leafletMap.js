@@ -1,3 +1,12 @@
+const mapBackgrounds = {
+    light: {link: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'},
+    dark: {link: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'},
+    satellite: {link: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'},
+    topo: {link: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, <br>Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'},
+    street: {link: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'},
+};
+
+
 class LeafletMap {
 
   /**
@@ -11,6 +20,7 @@ class LeafletMap {
     }
     this.data = _data;
     this.colorBy = 'neighborhood';
+    this.mapBackground = 'street';
     this.initVis();
   }
 
@@ -20,6 +30,7 @@ class LeafletMap {
   initVis() {
     let vis = this;
 
+    // TODO maybe move this to main because it may get reused?
     // calculate the time to update in days, defaulting to 0
     vis.data.forEach(d => {
       const created = new Date(d.DATE_CREATED);
@@ -28,14 +39,9 @@ class LeafletMap {
       if (isNaN(d.timeToUpdate) || d.timeToUpdate < 0) d.timeToUpdate = 0;
     });
 
-    // stadia alidade smooth Dark
-    vis.stadiaUrl = 'https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.{ext}'
-    vis.stadiaAttr = '&copy; <a href="https://www.stadiamaps.com/" target="_blank">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/" target="_blank">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-
     // base map layer; where the map is shown
-    vis.baseLayer = L.tileLayer(vis.stadiaUrl, {
-      id: 'stadia-image',
-      attribution: vis.stadiaAttr,
+    vis.baseLayer = L.tileLayer(mapBackgrounds[vis.mapBackground]["link"], {
+      attribution: mapBackgrounds[vis.mapBackground]["attribution"],
       ext: 'png'
     });
 
@@ -44,7 +50,7 @@ class LeafletMap {
       center: [39.145, -84.525], // Cincinnati's coords: 39.1031 N 84.5120 W
       zoom: 11.5,
       minZoom: 11,
-      maxZoom: 18, // if anymore than 18, leaflet images disappear
+      maxZoom: 18,
       zoomControl: false,
       layers: [vis.baseLayer]
     });
@@ -150,11 +156,28 @@ class LeafletMap {
 
   getColor(d) {
     let vis = this;
-    if (d === vis.data[0]) console.log("Current colorBy:", vis.colorBy, "Data Sample:", d);
     if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
     if (vis.colorBy === 'neighborhood') return vis.colorScaleNeighborhood(d.NEIGHBORHOOD);
     if (vis.colorBy === 'priority') return vis.colorScalePriority(d.PRIORITY);
     if (vis.colorBy === 'time') return vis.colorScaleTime(d.timeToUpdate);
     return "steelblue";
+  }
+
+  changeBackground(layerType) {
+    let vis = this;
+
+    // update mapBackground to be the new layer type of the map
+    vis.mapBackground = layerType;
+
+    // if the baseLayer is already initialized, remove it
+    if (vis.baseLayer) {
+        vis.theMap.removeLayer(vis.baseLayer);
+    }
+
+    // update baseLayer to the user specified layer
+    vis.baseLayer = L.tileLayer(mapBackgrounds[vis.mapBackground].link, {
+        attribution: mapBackgrounds[vis.mapBackground].attribution,
+        ext: 'png'
+    }).addTo(vis.theMap);
   }
 }
