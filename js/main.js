@@ -3,7 +3,7 @@ let leafletMap;
 d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
 .then(data => {
     // TODO this is the temporary filter mentioned in level 1 description -- will need removed later good for testing
-    // data = data.filter(d => d.SR_TYPE === 'PTHOLE');
+    data = data.filter(d => d.SR_TYPE === 'PTHOLE');
 
     // filter data down to separate rows with coords out for the leaflet map
     let missingCoordsCount = 0;
