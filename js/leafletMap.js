@@ -36,8 +36,12 @@ class LeafletMap {
       zoom: 11.5,
       minZoom: 11,
       maxZoom: 18, // if anymore than 18, leaflet images disappear
+      zoomControl: false,
       layers: [vis.baseLayer]
     });
+
+    // add zoom controls to the bottom right
+    L.control.zoom({ position: 'bottomright' }).addTo(vis.theMap);
 
     // initialize svg for d3 to add to map
     L.svg({ clickable: true }).addTo(vis.theMap)
@@ -67,7 +71,6 @@ class LeafletMap {
         //create a tool tip
         d3.select('#tooltip')
           .style('opacity', 1)
-          .style('z-index', 1000000)
           .html(`
             <div class="tooltip-content">
               <strong>Type:</strong> ${d.SR_TYPE}<br>
