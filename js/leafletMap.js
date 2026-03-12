@@ -32,7 +32,7 @@ class LeafletMap {
 
     // initialize the map DOM object
     vis.theMap = L.map('my-map', {
-      center: [39.145, -84.525],
+      center: [39.145, -84.525], // Cincinnati's coords: 39.1031 N 84.5120 W
       zoom: 11.5,
       minZoom: 11,
       maxZoom: 18, // if anymore than 18, leaflet images disappear
