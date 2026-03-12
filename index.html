@@ -7,13 +7,36 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="my-map"></div>
-
     <div id="tooltip"></div>
+
+    <div class="dashboard-container">
+
+        <header class="dashboard-header">
+            <h1>Cincinnati 311 Service Requests</h1>
+            <p><i>Matthew Goldsberry & Isaac Dowdy</i></p>
+        </header>
     
+        <div class="map-zone">
+            <div id="my-map"></div>
+        </div>
+
+        <div class="chart-column">
+            <div id="chart-1" class="chart-container">Chart 1 Placeholder</div>
+            <div id="chart-2" class="chart-container">Chart 2 Placeholder</div>
+            <div id="chart-3" class="chart-container">Chart 3 Placeholder</div>
+            <div id="chart-4" class="chart-container">Chart 4 Placeholder</div>
+            <div id="chart-5" class="chart-container">Chart 5 Placeholder</div>
+        </div>
+
+        <div class="timeline-zone">
+            <div id="timeline-chart">Timeline Chart Placeholder</div>
+        </div>
+
+    </div>
+
+    <!-- Load js Scripts -->
     <script src="js/d3.v6.min.js"></script>
     <script src="js/leaflet.js"></script>
-
     <script src="js/main.js"></script>
     <script src="js/leafletMap.js"></script>
 </body>
