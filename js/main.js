@@ -1,4 +1,4 @@
-let leafletMap;
+let leafletMap, timeline;
 
 d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
 .then(data => {
@@ -25,5 +25,7 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     leafletMap = new LeafletMap({ parentElement: '#my-map'}, validData);
     leafletMap.updateVis();
 
+    timeline = new Timeline({ parentElement: '#timeline-chart'}, validData);
+    timeline.updateVis();
   })
   .catch(error => console.error(error));
