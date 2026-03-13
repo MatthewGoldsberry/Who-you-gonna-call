@@ -55,6 +55,20 @@ class Timeline {
         vis.svg.append('g')
             .attr('class', 'y-axis');
 
+        // Axis labels
+        vis.svg.append('text')
+            .attr('class', 'axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', vis.width / 2)
+            .attr('y', vis.height + vis.config.margin.bottom - 18)
+            .text('Week');
+
+        vis.svg.append('text')
+            .attr('class', 'axis-label')
+            .attr('text-anchor', 'middle')
+            .attr('transform', `translate(${-vis.config.margin.left + 15}, ${vis.height / 2}) rotate(-90)`)
+            .text('Number of Calls');
+
         // Initialize the line for the timeline
         vis.line = d3.line()
             .x(d => vis.xScale(d.date))

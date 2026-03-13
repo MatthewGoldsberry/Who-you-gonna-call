@@ -159,6 +159,11 @@ body {
   border-right: 1px solid lightgrey;
 }
 
+.axis-label {
+  font-size: 12px;
+  fill: #333;
+}
+
 /* --- Tooltip Styles --- */
 
 #tooltip {
