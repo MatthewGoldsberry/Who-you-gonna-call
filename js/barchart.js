@@ -19,7 +19,7 @@ class BarChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth || 800,
             containerHeight: _config.containerHeight || 300,
-            margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 50 },
+            margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 70 },
             tooltipPadding: _config.tooltipPadding || 15,
             attributeKey: _config.attributeKey,
             title: _config.title,
@@ -85,13 +85,16 @@ class BarChart {
             .attr('class', 'chart-title')
             .attr('x', vis.config.containerWidth / 2)
             .attr('y', vis.config.margin.top / 2)
+            .style('text-anchor', 'middle')
             .text(vis.config.title);
 
         // axis labels
         vis.yAxisLabel = vis.chart.append('text') // y-axis
             .attr('class', 'axis-title')
+            .attr('transform', 'rotate(-90)')
             .attr('y', 0 - vis.config.margin.left + 15)
             .attr('x', 0 - (vis.height / 2))
+            .style('text-anchor', 'middle')
             .text(vis.config.yAxisLabel);
 
         // render initial visualization

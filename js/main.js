@@ -13,7 +13,7 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     let missingCoordsCount = 0;
     let validData = [];
     data.forEach(d => {
-        if (!d.LATITUDE || !d.LONGITUDE || d.LATITUDE.trim() === "" || d.LONGITUDE.trim() === "") {
+        if (!d.LATITUDE || !d.LONGITUDE || d.LATITUDE.trim() === '' || d.LONGITUDE.trim() === '') {
             missingCoordsCount++;
         } else {
             d.latitude = +d.LATITUDE; 
@@ -30,9 +30,9 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     leafletMap.updateVis();
 
     // initialize bar charts
-    requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'title', 'y', 'vertical');
-    requestMethods = updateBarChart(data, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'title', 'y', 'angled');
-    serviceDeptDistribution = updateBarChart(data, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'title', 'y');
-    priorityDistribution = updateBarChart(data, 'PRIORITY', priorityDistribution, '#priority-distribution', 'title', 'y');
+    requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical');
+    requestMethods = updateBarChart(data, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Request Submission Methods', 'Requests', 'angled');
+    serviceDeptDistribution = updateBarChart(data, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Department Workload Distribution', 'Requests', 'angled');
+    priorityDistribution = updateBarChart(data, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Requests by Priority Level', 'Requests');
   })
   .catch(error => console.error(error));
