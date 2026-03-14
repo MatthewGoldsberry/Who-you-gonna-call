@@ -199,7 +199,8 @@ class BarChart {
             })
 
         // update axis labels and ticks
-        vis.xAxis = d3.axisBottom(vis.xScale);
+        vis.xAxis = d3.axisBottom(vis.xScale)
+            .tickSizeOuter(0);
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
