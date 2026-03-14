@@ -1,4 +1,5 @@
-let leafletMap;
+let leafletMap
+let timeline;
 let requestsPerNeighborhood;
 let requestMethods;
 let serviceDeptDistribution;
@@ -28,6 +29,10 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     // initialize chart and then show it
     leafletMap = new LeafletMap({ parentElement: '#my-map'}, validData);
     leafletMap.updateVis();
+  
+    // initialize the timeline 
+    timeline = new Timeline({ parentElement: '#timeline-chart'}, validData);
+    timeline.updateVis();
 
     // initialize bar charts
     requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear');
