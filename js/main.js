@@ -30,9 +30,9 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     leafletMap.updateVis();
 
     // initialize bar charts
-    requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Neighborhood', 'Requests', 'vertical', 'linear');
-    requestMethods = updateBarChart(data, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Submission Method', 'Request Submission Methods', 'Method', 'Requests', 'angled', 'log');
-    serviceDeptDistribution = updateBarChart(data, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Department', 'Requests', 'angled', 'sqrt');
-    priorityDistribution = updateBarChart(data, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Priority Level', 'Requests', 'horizontal', 'sqrt');
+    requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear');
+    requestMethods = updateBarChart(data, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Submission Method', 'Request Submission Methods', 'Requests', 'angled', 'log');
+    serviceDeptDistribution = updateBarChart(data, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Requests', 'angled', 'sqrt');
+    priorityDistribution = updateBarChart(data, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Requests', 'horizontal', 'sqrt');
   })
   .catch(error => console.error(error));
