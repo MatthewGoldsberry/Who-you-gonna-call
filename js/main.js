@@ -1,4 +1,8 @@
 let leafletMap;
+let requestsPerNeighborhood;
+let requestMethods;
+let serviceDeptDistribution;
+let priorityDistribution;
 
 d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
 .then(data => {
@@ -25,5 +29,10 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')
     leafletMap = new LeafletMap({ parentElement: '#my-map'}, validData);
     leafletMap.updateVis();
 
+    // initialize bar charts
+    requestsPerNeighborhood = updateBarChart(data, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'title', 'y', 'vertical');
+    requestMethods = updateBarChart(data, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'title', 'y', 'angled');
+    serviceDeptDistribution = updateBarChart(data, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'title', 'y');
+    priorityDistribution = updateBarChart(data, 'PRIORITY', priorityDistribution, '#priority-distribution', 'title', 'y');
   })
   .catch(error => console.error(error));

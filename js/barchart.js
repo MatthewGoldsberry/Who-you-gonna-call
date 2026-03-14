@@ -10,21 +10,21 @@ class BarChart {
      *  - containerWidth: width of SVG container
      *  - containerHeight: height of SVG container
      *  - margin: definition of top, right, left and bottom margins
-     *  - xAxisLabel: x-axis label
+     *  - title: chart title
      *  - yAxisLabel: y-axis label
-     *  - unit: unit of x-axis 
      * @param {Array} _data
      */
     constructor(_config, _data) {
         this.config = {
             parentElement: _config.parentElement,
-            containerWidth: _config.containerWidth || 500,
+            containerWidth: _config.containerWidth || 800,
             containerHeight: _config.containerHeight || 300,
             margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 50 },
             tooltipPadding: _config.tooltipPadding || 15,
-            xAxisLabel: _config.xAxisLabel,
+            attributeKey: _config.attributeKey,
+            title: _config.title,
             yAxisLabel: _config.yAxisLabel,
-            unit: _config.unit || 'years',
+            xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
         }
         this.data = _data;
         this.initVis();
@@ -40,9 +40,17 @@ class BarChart {
         vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
         vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
 
+        // define size of SVG drawing area based on the specified SVG window 
+        vis.svg = d3.select(vis.config.parentElement)
+            .attr('width', '100%') 
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${vis.config.containerWidth} ${vis.config.containerHeight}`)
+            .attr('preserveAspectRatio', 'none');
+
         // initialize scales
-        vis.xScale = d3.scaleLinear()
-            .range([0, vis.width]);
+        vis.xScale = d3.scaleBand()
+            .range([0, vis.width])
+            .padding(0.2);
 
         vis.yScale = d3.scaleLinear()
             .range([vis.height, 0]);
@@ -64,8 +72,6 @@ class BarChart {
         vis.chart = vis.svg.append('g')
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
 
-        vis.colors = ['#ffffd9', '#edf8b1', '#c7e9b4', '#7fcdbb', '#41b6c4', '#1d91c0', '#225ea8', '#253494', '#172976', '#081d58']
-
         // append axis groups
         vis.yAxisG = vis.chart.append('g')
             .attr('class', 'axis y-axis');
@@ -74,19 +80,19 @@ class BarChart {
             .attr('class', 'axis x-axis')
             .attr('transform', `translate(0,${vis.height})`); // move to bottom of chart
 
+        // title
+        vis.title = vis.svg.append('text')
+            .attr('class', 'chart-title')
+            .attr('x', vis.config.containerWidth / 2)
+            .attr('y', vis.config.margin.top / 2)
+            .text(vis.config.title);
+
         // axis labels
         vis.yAxisLabel = vis.chart.append('text') // y-axis
             .attr('class', 'axis-title')
-            .attr('transform', 'rotate(-90)')
             .attr('y', 0 - vis.config.margin.left + 15)
             .attr('x', 0 - (vis.height / 2))
             .text(vis.config.yAxisLabel);
-
-        vis.xAxisLabel = vis.chart.append('text') // x-axis
-            .attr('class', 'axis-title')
-            .attr('x', vis.width / 2)
-            .attr('y', vis.height + vis.config.margin.bottom - 5)
-            .text(vis.config.xAxisLabel);
 
         // render initial visualization
         vis.updateVis();
@@ -98,25 +104,22 @@ class BarChart {
     updateVis() {
         let vis = this;
 
-        // calculate the threshold and domain based on the extent of the values
-        const extent = d3.extent(vis.data, d => d.value);
-        const binInfo = calcBinInfo(extent);
+        const counts = d3.rollups(
+            vis.data, 
+            v => v.length, 
+            d => d[vis.config.attributeKey] 
+        );
 
-        // create bins for bar chart
-        const binGenerator = d3.bin()
-            .value(d => d.value)
-            .domain(binInfo.niceDomain)
-            .thresholds(binInfo.exactThreshold);
+        vis.groupedData = Array.from(counts, ([category, count]) => ({
+            category: category || 'UNKNOWN',
+            count: count
+        }));
 
-        vis.bins = binGenerator(vis.data);
-
-        // store the bin boundaries for tick marking 
-        vis.binBoundaries = vis.bins.map(d => d.x0);
-        vis.binBoundaries.push(vis.bins[vis.bins.length - 1].x1);
+        vis.groupedData.sort((a, b) => b.count - a.count);
 
         // update scale domains
-        vis.xScale.domain([vis.binBoundaries[0], vis.binBoundaries[vis.binBoundaries.length - 1]]);
-        vis.yScale.domain([0, d3.max(vis.bins, d => d.length)]);
+        vis.xScale.domain(vis.groupedData.map(d => d.category));
+        vis.yScale.domain([0, d3.max(vis.groupedData, d => d.count)]);
 
         // render bar chart
         vis.renderVis();
@@ -130,26 +133,20 @@ class BarChart {
 
         // render bars in chart
         vis.chart.selectAll('.bar')
-            .data(vis.bins)
+            .data(vis.groupedData)
             .join('rect')
             .attr('class', 'bar')
-            .attr('width', d => vis.xScale(d.x1) - vis.xScale(d.x0) - 1)
-            .attr('height', d => vis.height - vis.yScale(d.length))
-            .attr('y', d => vis.yScale(d.length))
-            .attr('x', d => vis.xScale(d.x0))
-            .attr('fill', (d, i) => { return vis.colors[i] || vis.colors[vis.colors.length - 1]; })
+            .attr('width', vis.xScale.bandwidth())
+            .attr('height', d => vis.height - vis.yScale(d.count)) 
+            .attr('y', d => vis.yScale(d.count))
+            .attr('x', d => vis.xScale(d.category))
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
-                // highlight countries in bin
-                highlightCountries(d.map(c => c.entity));
-                scatterplot.refreshStacking();
-
                 // tooltip creation
-
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
 
@@ -158,14 +155,14 @@ class BarChart {
                     .style('display', 'block')
                     .style('top', (event.pageY + vis.config.tooltipPadding) + 'px') // can style top because y bounds will never go out of page view
                     .html(`
-                        <div class="tooltip-title">Bin Details</div>
+                        <div class="tooltip-title">${vis.config.title}</div>
                         <div class="tooltip-row">
-                            <span class="tooltip-label">Range</span>
-                            <span class="tooltip-value">${d.x0.toFixed(2)} - ${d.x1.toFixed(2)} ${vis.config.unit}</span>
+                            <span class="tooltip-label">Category:</span>
+                            <span class="tooltip-value">${d.category}</span>
                         </div>
                         <div class="tooltip-row">
-                            <span class="tooltip-label">Frequency</span>
-                            <span class="tooltip-value">${d.length} Countries</span>
+                            <span class="tooltip-label">Frequency:</span>
+                            <span class="tooltip-value">${d.count} Requests</span>
                         </div>
                     `);
 
@@ -182,24 +179,16 @@ class BarChart {
                 tooltip.style('left', xPosition + 'px')
             })
             .on('mouseout', () => {
-                unhighlightCountry();
                 // remove tooltip
                 d3.select('#tooltip').style('display', 'none');
             })
-            .on('click', (event, d) => { // selections
-                handleSelections(d.map(c => c.entity));
-                scatterplot.refreshStacking();
-            });
 
         // update axis labels and ticks
-        vis.xAxisLabel.text(vis.config.xAxisLabel);
-        vis.xAxis = d3.axisBottom(vis.xScale)
-            .tickValues(vis.binBoundaries)
-            .tickFormat(d3.format(".0f")); // choropleth legend rounds to nearest one automatically, so that will also be done here for parity
+        vis.xAxis = d3.axisBottom(vis.xScale);
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
-        vis.xAxisG.selectAll('.tick text')
+        const xTicks = vis.xAxisG.selectAll('.tick text')
             .style('font-size', '0.85rem');
 
         // update y-axis with horizontal gridlines
@@ -215,7 +204,18 @@ class BarChart {
         vis.yAxisG.selectAll('.tick text')
             .style('font-size', '0.85rem');
 
-        // makes selection persist even when data values are changed
-        highlightCountry();
+        if (vis.config.xAxisTickRotation === 'vertical') {
+            xTicks
+                .style('text-anchor', 'end')
+                .attr('dx', '-.8em')
+                .attr('dy', '-.5em') 
+                .attr('transform', 'rotate(-90)');
+        } else if (vis.config.xAxisTickRotation === 'angled') {
+            xTicks
+                .style('text-anchor', 'end')
+                .attr('dx', '-.8em')
+                .attr('dy', '.15em')
+                .attr('transform', 'rotate(-45)');
+        } // default to horizontal
     }
 }
