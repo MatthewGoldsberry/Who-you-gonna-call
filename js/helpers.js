@@ -12,9 +12,10 @@
  * @param {string} title - chart title
  * @param {string} yAxisLabel - y axis label
  * @param {string} xAxisTickRotation - axis rotations to cleanly fit x axis labels
+ * @param {string} yScale - type of scaling to apply to y axis (defaults to linear) 
  * @returns {BarChart} - bar chart instance
  */
-function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, xAxisLabel, yAxisLabel, xAxisTickRotation, yScaleType = 'linear') {
+function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation, yScaleType = 'linear') {
     
     // create new instance if it doesn't exist
     if (!chartInstance) {
@@ -31,7 +32,6 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
         // update existing instance
         chartInstance.config.category = category;
         chartInstance.config.title = title;
-        chartInstance.config.xAxisLabel = xAxisLabel;
         chartInstance.config.yAxisLabel = yAxisLabel;
         chartInstance.config.xAxisTickRotation = xAxisTickRotation;
         chartInstance.config.yScaleType = yScaleType;

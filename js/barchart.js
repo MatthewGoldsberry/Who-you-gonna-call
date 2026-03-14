@@ -14,6 +14,7 @@ class BarChart {
      *  - category: categorical name of the data being represented 
      *  - title: chart title
      *  - yAxisLabel: y-axis label
+     *  - yScaleType: type of scaling to apply to y axis
      *  - xAxisTickRotation: axis rotations to cleanly fit x axis labels
      * @param {Array} _data
      */
