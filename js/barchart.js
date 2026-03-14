@@ -10,8 +10,11 @@ class BarChart {
      *  - containerWidth: width of SVG container
      *  - containerHeight: height of SVG container
      *  - margin: definition of top, right, left and bottom margins
+     *  - attributeKey: name of column to be used for binning values
+     *  - category: categorical name of the data being represented 
      *  - title: chart title
      *  - yAxisLabel: y-axis label
+     *  - xAxisTickRotation: axis rotations to cleanly fit x axis labels
      * @param {Array} _data
      */
     constructor(_config, _data) {
@@ -22,6 +25,7 @@ class BarChart {
             margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 70 },
             tooltipPadding: _config.tooltipPadding || 15,
             attributeKey: _config.attributeKey,
+            category: _config.category,
             title: _config.title,
             yAxisLabel: _config.yAxisLabel,
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
@@ -155,17 +159,13 @@ class BarChart {
 
                 // defined everything but left position 
                 tooltip
+                    .style('opacity', 1)
                     .style('display', 'block')
                     .style('top', (event.pageY + vis.config.tooltipPadding) + 'px') // can style top because y bounds will never go out of page view
                     .html(`
-                        <div class="tooltip-title">${vis.config.title}</div>
-                        <div class="tooltip-row">
-                            <span class="tooltip-label">Category:</span>
-                            <span class="tooltip-value">${d.category}</span>
-                        </div>
-                        <div class="tooltip-row">
-                            <span class="tooltip-label">Frequency:</span>
-                            <span class="tooltip-value">${d.count} Requests</span>
+                        <div class="tooltip-content">
+                            <strong>${vis.config.category}:</strong> ${d.category}<br>
+                            <strong>Frequency:</strong> ${d.count} Requests
                         </div>
                     `);
 
@@ -183,7 +183,7 @@ class BarChart {
             })
             .on('mouseout', () => {
                 // remove tooltip
-                d3.select('#tooltip').style('display', 'none');
+                d3.select('#tooltip').style('opacity', 0);
             })
 
         // update axis labels and ticks

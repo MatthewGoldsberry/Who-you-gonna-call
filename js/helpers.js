@@ -8,18 +8,20 @@
  * @param {string} attributeKey - name of column to be used for binning values
  * @param {BarChart} chartInstance - reference to bar chart instance
  * @param {string} parentElement - css selector for target SVG element
+ * @param {string} category - categorical name of the data being represented 
  * @param {string} title - chart title
  * @param {string} yAxisLabel - y axis label
  * @param {string} xAxisTickRotation - axis rotations to cleanly fit x axis labels
  * @returns {BarChart} - bar chart instance
  */
-function updateBarChart(data, attributeKey, chartInstance, parentElement, title, yAxisLabel, xAxisTickRotation = 'horizontal') {
+function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation = 'horizontal') {
     
     // create new instance if it doesn't exist
     if (!chartInstance) {
         return new BarChart({ 
             parentElement: parentElement, 
             attributeKey: attributeKey,
+            category: category,
             title: title,
             yAxisLabel: yAxisLabel,
             xAxisTickRotation: xAxisTickRotation,
