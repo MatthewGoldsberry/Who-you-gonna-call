@@ -115,7 +115,7 @@ class BarChart {
         );
 
         vis.groupedData = Array.from(counts, ([category, count]) => ({
-            category: category || 'UNKNOWN',
+            category: category || 'UNSPECIFIED',
             count: count
         }));
 
@@ -159,6 +159,7 @@ class BarChart {
             .attr('height', d => vis.height - vis.yScale(d.count)) 
             .attr('y', d => vis.yScale(d.count))
             .attr('x', d => vis.xScale(d.category))
+            .attr('fill', 'steelblue')
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
