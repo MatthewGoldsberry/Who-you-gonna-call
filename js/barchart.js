@@ -28,6 +28,7 @@ class BarChart {
             category: _config.category,
             title: _config.title,
             yAxisLabel: _config.yAxisLabel,
+            yScaleType: _config.yScaleType || 'linear',
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
         }
         this.data = _data;
@@ -66,11 +67,6 @@ class BarChart {
         vis.yAxis = d3.axisLeft(vis.yScale)
             .ticks(5)
             .tickSizeOuter(0);
-
-        // define size of SVG drawing area based on the specified SVG window 
-        vis.svg = d3.select(vis.config.parentElement)
-            .attr('viewBox', `0 0 ${vis.config.containerWidth} ${vis.config.containerHeight}`)
-            .attr('preserveAspectRatio', 'xMidYMid meet');
 
         // append group element that will contain our actual chart and position it according to the given margin config
         vis.chart = vis.svg.append('g')
@@ -111,6 +107,7 @@ class BarChart {
     updateVis() {
         let vis = this;
 
+        // group the data by the configured attribute and count the occurrences
         const counts = d3.rollups(
             vis.data, 
             v => v.length, 
@@ -124,9 +121,25 @@ class BarChart {
 
         vis.groupedData.sort((a, b) => b.count - a.count);
 
-        // update scale domains
+        // find the highest frequency count to set the upper bound for the y-axis
+        const maxCount = d3.max(vis.groupedData, d => d.count);
+
+        // set  y-scale type based on the provided configuration
+        if (vis.config.yScaleType === 'log') {
+            vis.yScale = d3.scaleLog().range([vis.height, 0]);
+            vis.yScale.domain([1, maxCount]); // Log still needs to start at 1
+            
+        } else if (vis.config.yScaleType === 'sqrt') {
+            vis.yScale = d3.scaleSqrt().range([vis.height, 0]);
+            vis.yScale.domain([0, maxCount]); 
+            
+        } else {
+            vis.yScale = d3.scaleLinear().range([vis.height, 0]);
+            vis.yScale.domain([0, maxCount]); 
+        }
+
+        // map sorted category names
         vis.xScale.domain(vis.groupedData.map(d => d.category));
-        vis.yScale.domain([0, d3.max(vis.groupedData, d => d.count)]);
 
         // render bar chart
         vis.renderVis();
@@ -142,7 +155,6 @@ class BarChart {
         vis.chart.selectAll('.bar')
             .data(vis.groupedData)
             .join('rect')
-            .attr('class', 'bar')
             .attr('width', vis.xScale.bandwidth())
             .attr('height', d => vis.height - vis.yScale(d.count)) 
             .attr('y', d => vis.yScale(d.count))
@@ -194,19 +206,25 @@ class BarChart {
         const xTicks = vis.xAxisG.selectAll('.tick text')
             .style('font-size', '0.85rem');
 
-        // update y-axis with horizontal gridlines
-        vis.yAxisG
-            .call(d3.axisLeft(vis.yScale)
-                .ticks(5)
-                .tickSize(-vis.width) // creates gridlines
-                .tickSizeOuter(0)
-            )
-            .call(g => g.select('.domain').remove()) // remove vertical line
+        // configure the y-axis ticks
+        const yAxis = d3.axisLeft(vis.yScale)
+            .tickSize(-vis.width) 
+            .tickSizeOuter(0);
+
+        // format to 5 ticks, applying additional formatting for log
+        if (vis.config.yScaleType === 'log') {
+            yAxis.ticks(5, "~s"); 
+        } else {
+            yAxis.ticks(5);
+        }
+
+        // draw the y-axis
+        vis.yAxisG.call(yAxis)
+            .call(g => g.select('.domain').remove())
             .selectAll('line')
             .attr('stroke', 'darkgrey');
-        vis.yAxisG.selectAll('.tick text')
-            .style('font-size', '0.85rem');
 
+        // handle orienting the x-axis labels 
         if (vis.config.xAxisTickRotation === 'vertical') {
             xTicks
                 .style('text-anchor', 'end')

@@ -14,7 +14,7 @@
  * @param {string} xAxisTickRotation - axis rotations to cleanly fit x axis labels
  * @returns {BarChart} - bar chart instance
  */
-function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation = 'horizontal') {
+function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, xAxisLabel, yAxisLabel, xAxisTickRotation, yScaleType = 'linear') {
     
     // create new instance if it doesn't exist
     if (!chartInstance) {
@@ -24,12 +24,17 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
             category: category,
             title: title,
             yAxisLabel: yAxisLabel,
+            yScaleType: yScaleType,
             xAxisTickRotation: xAxisTickRotation,
         }, data);
     } else {
         // update existing instance
-        chartInstance.config.yAxisLabel = yAxisLabel;
+        chartInstance.config.category = category;
         chartInstance.config.title = title;
+        chartInstance.config.xAxisLabel = xAxisLabel;
+        chartInstance.config.yAxisLabel = yAxisLabel;
+        chartInstance.config.xAxisTickRotation = xAxisTickRotation;
+        chartInstance.config.yScaleType = yScaleType;
         chartInstance.data = data;
         chartInstance.updateVis();
         return chartInstance;
