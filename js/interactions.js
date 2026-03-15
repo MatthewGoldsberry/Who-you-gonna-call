@@ -53,14 +53,12 @@ function highlightRequests(hoveredSRs = []) {
         return;
     }
 
-    // dim everything in all SVGs
-    d3.selectAll('.bar, .timeline-point, .dot').classed('unfocused', true);
+    const SRsToFocusSet = new Set(SRsToFocus);
 
-    // combine request SR_NUMBERs into a CSS selector for all requests in the list
-    const selectors = SRsToFocus.map(SR => { return `.request-${SR}`; }).join(', ');
-
-    // highlight the specific request in all visualizations
-    d3.selectAll(selectors).classed('unfocused', false).classed('focused', true);
+    // focus objects in focus set and unfocus all others
+    d3.selectAll('.dot, .timeline-point, .bar')
+        .classed('unfocused', d => !SRsToFocusSet.has(d.SR_NUMBER))
+        .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER));
 
     // increase dot size 
     d3.selectAll('.dot.focused').attr('r', function() {
@@ -70,7 +68,7 @@ function highlightRequests(hoveredSRs = []) {
     // go into each bar chart and figure out which bin the request is in, then focus that bin
     [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].forEach(vis => {
         const matchingCategories = vis.data
-            .filter(d => SRsToFocus.includes(d.SR_NUMBER))
+            .filter(d => SRsToFocusSet.has(d.SR_NUMBER))
             .map(d => d[vis.config.attributeKey]);
 
         vis.chart.selectAll('.bar').each((d, i, nodes) => {
