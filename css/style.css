@@ -190,6 +190,7 @@ body {
 /* --- Focussing Configurations -- */
 
 .bar,
+.timeline-point,
 .dot {
   transition: opacity 0.2s ease;
   cursor: pointer;

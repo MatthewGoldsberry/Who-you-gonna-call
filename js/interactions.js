@@ -54,7 +54,7 @@ function highlightRequests(hoveredSRs = []) {
     }
 
     // dim everything in all SVGs
-    d3.selectAll('.bar, .dot').classed('unfocused', true);
+    d3.selectAll('.bar, .timeline-point, .dot').classed('unfocused', true);
 
     // combine request SR_NUMBERs into a CSS selector for all requests in the list
     const selectors = SRsToFocus.map(SR => { return `.request-${SR}`; }).join(', ');
@@ -69,15 +69,26 @@ function highlightRequests(hoveredSRs = []) {
 
     // go into each bar chart and figure out which bin the request is in, then focus that bin
     [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].forEach(vis => {
-        // categories tied to the focused SR_NUMBERs
         const matchingCategories = vis.data
             .filter(d => SRsToFocus.includes(d.SR_NUMBER))
             .map(d => d[vis.config.attributeKey]);
 
-        // highlight the bars whose category matches the ones we just found
-        vis.chart.selectAll('.bar').each(function(d) {
+        vis.chart.selectAll('.bar').each((d, i, nodes) => {
             if (matchingCategories.includes(d.category)) {
-                d3.select(this).classed('unfocused', false).classed('focused', true);
+                d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
+            }
+        });
+    });
+
+    // go into the timeline and figure out which bin of weeks data the request is in, then focus that bin
+    timeline.forEach(vis => {
+        const matchingWeeks = vis.data
+            .filter(d => SRsToFocus.includes(d.SR_NUMBER))
+            .map(d => +d3.timeWeek.floor(new Date(d.DATE_CREATED))); 
+
+        vis.svg.selectAll('.timeline-point').each((d, i, nodes) => {
+            if (matchingWeeks.includes(+d.date)) {
+                d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
             }
         });
     });
@@ -98,7 +109,7 @@ function unhighlightRequest() {
     if (selectedRequests.length > 0) {
         highlightRequests();
     } else {
-        d3.selectAll('.bar, .dot').classed('unfocused', false).classed('focused', false);
+        d3.selectAll('.bar, .timeline-point, .dot').classed('unfocused', false).classed('focused', false);
 
         // return dots back to original size
         d3.selectAll('.dot').attr('r', function() {
