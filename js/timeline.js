@@ -130,6 +130,21 @@ class Timeline {
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
             .on('mouseover', function(event, d) {
+                // calculate the end of the hovered week so we have a date range
+                const weekStart = d.date;
+                const weekEnd = d3.timeWeek.offset(weekStart, 1); // adds exactly 1 week
+
+                // filter the data to find items that fall within this date range and map them to just their SR_NUMBERs
+                const srNumbersInWeek = vis.data
+                    .filter(item => {
+                        const itemDate = new Date(item.DATE_CREATED);
+                        return itemDate >= weekStart && itemDate < weekEnd;
+                    })
+                    .map(item => item.SR_NUMBER);
+
+                // highlight all requests in that given week
+                highlightRequests(srNumbersInWeek);
+                
                 d3.select('#tooltip')
                     .style('opacity', 1)
                     .html(`
@@ -145,7 +160,10 @@ class Timeline {
                     .style('top', (event.pageY - 28) + 'px');
             })
             .on('mouseleave', function() {
+                unhighlightRequest();
                 d3.select('#tooltip').style('opacity', 0);
             });
+
+        highlightRequest();
     }
 }

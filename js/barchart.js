@@ -167,6 +167,12 @@ class BarChart {
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
+                // get the SR_NUMBERs of the selected bin
+                const srNumbersInBin = vis.data
+                    .filter(item => item[vis.config.attributeKey] === d.category)
+                    .map(item => item.SR_NUMBER);
+
+                highlightRequests(srNumbersInBin);
                 // tooltip creation
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
@@ -196,6 +202,7 @@ class BarChart {
                 tooltip.style('left', xPosition + 'px')
             })
             .on('mouseout', () => {
+                unhighlightRequest();
                 // remove tooltip
                 d3.select('#tooltip').style('opacity', 0);
             })
@@ -241,5 +248,7 @@ class BarChart {
                 .attr('dy', '.15em')
                 .attr('transform', 'rotate(-45)');
         } // default to horizontal
+
+        highlightRequest();
     }
 }
