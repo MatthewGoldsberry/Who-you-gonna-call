@@ -79,7 +79,7 @@ function highlightRequests(hoveredSRs = []) {
     });
 
     // go into the timeline and figure out which bin of weeks data the request is in, then focus that bin
-    timeline.forEach(vis => {
+    [timeline].forEach(vis => {
         const matchingWeeks = vis.data
             .filter(d => SRsToFocus.includes(d.SR_NUMBER))
             .map(d => +d3.timeWeek.floor(new Date(d.DATE_CREATED))); 
