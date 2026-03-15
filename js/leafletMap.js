@@ -167,8 +167,8 @@ class LeafletMap {
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr("fill", d => vis.getColor(d))
       .attr("base-r", vis.dynamicRadius)
-      .attr("r", function() {
-          const isFocused = d3.select(vis).classed('focused');
+      .attr("r", (d, i, nodes) => {
+          const isFocused = d3.select(nodes[i]).classed('focused');
           return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
       });
 
