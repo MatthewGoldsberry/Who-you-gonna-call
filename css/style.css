@@ -186,3 +186,29 @@ body {
   color: black;
   margin-right: 4px;
 }
+
+/* --- Focussing Configurations -- */
+
+.bar,
+.dot {
+  transition: opacity 0.2s ease;
+  cursor: pointer;
+}
+
+.unfocused {
+  opacity: 0.25;
+}
+
+.focused {
+  stroke: black;
+  stroke-width: 1px;
+}
+
+.dot.focused {
+  opacity: 0.9;
+}
+
+.dot.unfocused {
+  stroke: none;
+  opacity: 0.15;
+}
