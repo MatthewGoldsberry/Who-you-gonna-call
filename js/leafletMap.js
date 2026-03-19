@@ -161,7 +161,7 @@ class LeafletMap {
     vis.brush = d3.brush()
       .extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]])
       .filter(event => vis.brushingEnabled && !event.button)
-      .on('start brush end', function(event) {
+      .on('start end', function(event) {
         vis.handleBrush(event);
       });
 
