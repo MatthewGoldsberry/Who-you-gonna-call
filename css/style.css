@@ -112,6 +112,31 @@ body {
   outline: none;
 }
 
+.brush-button {
+  border: 1px solid lightgrey;
+  background-color: rgba(255, 255, 255, 0.95);
+  color: #1f2937;
+  border-radius: 4px;
+  padding: 7px 10px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  transition: all 0.2s ease;
+}
+
+.brush-button:hover {
+  background-color: white;
+  border-color: darkgrey;
+}
+
+.brush-button.active {
+  background-color: #2a6dff;
+  border-color: #2a6dff;
+  color: white;
+}
+
 /* --- Floating Bottom-Left Note --- */
 
 #missing-data-note {
@@ -185,4 +210,23 @@ body {
   font-weight: 700;
   color: black;
   margin-right: 4px;
+}
+
+.map-dot {
+  transition: opacity 0.12s ease;
+}
+
+.map-dot.selected {
+  stroke: #111;
+  stroke-width: 1.5px;
+}
+
+.brush .selection {
+  fill: rgba(42, 109, 255, 0.2);
+  stroke: #2a6dff;
+  stroke-width: 1.5px;
+}
+
+#my-map.brush-enabled {
+  cursor: crosshair;
 }

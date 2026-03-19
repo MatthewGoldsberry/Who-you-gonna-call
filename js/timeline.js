@@ -107,9 +107,16 @@ class Timeline {
             .sort((a, b) => a.date - b.date);
 
 
-        // Set scale domains based on date and count data
-        vis.xScale.domain(d3.extent(vis.aggregatedData, d => d.date));
-        vis.yScale.domain([0, d3.max(vis.aggregatedData, d => d.count) || 1]);
+        // Sets scale domains based on date and count data
+        // Handles the case where the brushed dataset is empty
+        if (vis.aggregatedData.length === 0) {
+            const now = new Date();
+            vis.xScale.domain([d3.timeWeek.floor(now), d3.timeWeek.offset(d3.timeWeek.floor(now), 1)]);
+            vis.yScale.domain([0, 1]);
+        } else {
+            vis.xScale.domain(d3.extent(vis.aggregatedData, d => d.date));
+            vis.yScale.domain([0, d3.max(vis.aggregatedData, d => d.count) || 1]);
+        }
 
         // call axes
         vis.svg.select('.x-axis').call(vis.xAxis);
