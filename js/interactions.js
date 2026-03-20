@@ -66,8 +66,7 @@ function highlightRequests(hoveredSRs = []) {
             .classed('focused', false)
             .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')); });
 
-        // apply new .focused to all now-focused dots
-        // TODO this part could be improved
+        // increase size of the focussed dots 
         leafletMap.Dots.filter(d => SRsToFocusSet.has(d.SR_NUMBER))
             .classed('focused', true)
             .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')) + 2; });
