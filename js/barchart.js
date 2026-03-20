@@ -164,13 +164,26 @@ class BarChart {
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
+        // pre-compute lookup maps
+        vis.binToSRsMap = new Map();
+        vis.srToBinMap = new Map();
+        vis.data.forEach(d => {
+            // get category value based on the selected attribute key
+            const category = d[vis.config.attributeKey] || 'UNSPECIFIED';
+
+            // add the current Service Request number to corresponding category's array
+            if (!vis.binToSRsMap.has(category)) vis.binToSRsMap.set(category, []);
+            vis.binToSRsMap.get(category).push(d.SR_NUMBER);
+
+            // map individual Service Request number back to the category (bin)
+            vis.srToBinMap.set(d.SR_NUMBER, category);
+        });
+
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
                 // get the SR_NUMBERs of the selected bin
-                const srNumbersInBin = vis.data
-                    .filter(item => item[vis.config.attributeKey] === d.category)
-                    .map(item => item.SR_NUMBER);
+                const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
 
                 highlightRequests(srNumbersInBin);
                 // tooltip creation
