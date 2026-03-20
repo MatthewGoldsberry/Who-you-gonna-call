@@ -126,9 +126,17 @@ class Timeline {
             vis.srToWeekMap.set(d.SR_NUMBER, weekTimestamp);
         });
 
-        // Set scale domains based on date and count data
-        vis.xScale.domain(d3.extent(vis.aggregatedData, d => d.date));
-        vis.yScale.domain([0, d3.max(vis.aggregatedData, d => d.count) || 1]);
+        // Sets scale domains based on date and count data
+        // Handles the case where the brushed dataset is empty
+        if (weeklyCounts.size === 0) {
+            const nowFloor = +d3.timeWeek.floor(Date.now());
+            vis.xScale.domain([nowFloor, +d3.timeWeek.offset(nowFloor, 1)]);
+            vis.yScale.domain([0, 1]);
+        } else {
+            const [minTs, maxTs] = d3.extent(weeklyCounts.keys());
+            vis.xScale.domain([minTs, maxTs]);
+            vis.yScale.domain([0, d3.max(weeklyCounts.values())]);
+        }
 
         // call axes
         vis.svg.select('.x-axis').call(vis.xAxis);

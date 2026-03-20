@@ -26,10 +26,14 @@ class LeafletMap {
   constructor(_config, _data) {
     this.config = {
       parentElement: _config.parentElement,
+      onSelectionChange: _config.onSelectionChange || (() => {})
     }
     this.data = _data;
     this.colorBy = 'neighborhood';
     this.mapBackground = 'street';
+    this.currentBrushSelection = null; // Stores the current brush coordinate bounds
+    this.selectedData = [];
+    this.brushingEnabled = false;
     this.initVis();
   }
 
@@ -104,7 +108,8 @@ class LeafletMap {
     vis.Dots = vis.svg.selectAll('circle')
       .data(vis.data)
       .join('circle')
-      .attr('stroke', 'black')
+      .attr('class', 'map-dot')
+      .attr("stroke", "black")
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr('base-r', vis.dynamicRadius)
@@ -149,7 +154,27 @@ class LeafletMap {
       vis.updateVis();
     });
 
+    vis.brushG = vis.svg.append("g")
+      .attr("class", "brush");
+
+    // Initialize the D3 brush behavior
+    vis.brush = d3.brush()
+      .extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]])
+      .filter(event => vis.brushingEnabled && !event.button)
+      .on('start end', function(event) {
+        vis.handleBrush(event);
+      });
+
+    // Attach the brush to the SVG; initially hidden until brush mode is enabled
+    vis.brushG.call(vis.brush);
+    vis.brushG.style('display', 'none');
+
+    vis.theMap.on('resize', () => {
+      vis.refreshBrushExtent();
+    });
   }
+
+  
 
   /**
    *  update the visualization 
@@ -172,7 +197,141 @@ class LeafletMap {
           return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
       });
 
+
+    if (vis.currentBrushSelection) {
+      vis.applySelectionFromBounds(vis.currentBrushSelection, true);
+    } else {
+      vis.Dots
+        .classed('selected', false)
+        .attr('opacity', 1);
+    }
+
     highlightRequest();
+  }
+
+  /**
+   * Handles brushing events and updates selected records.
+   * @param {Object} event - D3 brush event containing {selection, type, ...}
+   */
+  handleBrush(event) {
+    let vis = this;
+    const selection = event.selection;
+
+    // If selection is null (brush was cleared), reset everything
+    if (!selection) {
+      vis.currentBrushSelection = null;
+      vis.selectedData = [];
+      // Make all dots fully visible again
+      vis.Dots
+        .classed('selected', false)
+        .attr('opacity', 1);
+      // Notify linked visualizations (charts) to restore full dataset
+      vis.config.onSelectionChange(null);
+      return;
+    }
+
+    vis.currentBrushSelection = selection;
+    vis.applySelectionFromBounds(selection, true);
+  }
+
+  /**
+   * Applies selected styling to dots and optionally notifies linked charts.
+   * Computes which data records fall within the brush rectangle bounds
+   * @param {Array<Array<number>>} selection - [[x0, y0], [x1, y1]] brush bounds in screen coords
+   * @param {boolean} notify - if true, calls onSelectionChange callback with selected data
+   */
+  applySelectionFromBounds(selection, notify = false) {
+    let vis = this;
+    const [[x0, y0], [x1, y1]] = selection;
+
+    // Test each data record to see if it falls within the brush rectangle
+    const selectedSet = new Set();
+    vis.data.forEach(d => {
+      // Convert lat/lon to current map screen coordinates
+      const point = vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]);
+      // Check if point is inside the brush bounds
+      if (x0 <= point.x && point.x <= x1 && y0 <= point.y && point.y <= y1) {
+        selectedSet.add(d);
+      }
+    });
+
+    vis.selectedData = Array.from(selectedSet);
+
+    // Update dot appearance: selected dots stay fully opaque with bold stroke,
+    // unselected dots fade to 20% opacity
+    vis.Dots
+      .classed('selected', d => selectedSet.has(d))
+      .attr('opacity', d => selectedSet.has(d) ? 1 : 0.2);
+
+    // Notify any subscribers (dashboard) of the new selection
+    if (notify) {
+      vis.config.onSelectionChange(vis.selectedData);
+    }
+  }
+
+  /**
+   * Recalculates and updates the brush extent to match the current map view
+   * @private
+   */
+  refreshBrushExtent() {
+    let vis = this;
+    // Update the brush's allowed area to match the current map size
+    vis.brush.extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]]);
+    vis.brushG.call(vis.brush);
+
+    // If there's an active selection, move it to the new bounds
+    if (vis.currentBrushSelection) {
+      vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+    }
+  }
+
+  /**
+   * Enables or disables brushing mode.
+   * @param {boolean} enabled - true to turn on brush mode, false to turn it off
+   */
+  setBrushingEnabled(enabled) {
+    let vis = this;
+    vis.brushingEnabled = enabled;
+
+    // Show/hide the brush SVG group based on enabled state
+    vis.brushG.style('display', vis.brushingEnabled ? null : 'none');
+    d3.select('#my-map').classed('brush-enabled', vis.brushingEnabled);
+
+    if (vis.brushingEnabled) {
+      // Disable all map interactions while in brush mode to avoid conflicts
+      // TODO could be improved to find a way to allow the user to interact with the map in brush mode
+      vis.theMap.dragging.disable();
+      vis.theMap.boxZoom.disable();
+      vis.theMap.doubleClickZoom.disable();
+      vis.theMap.scrollWheelZoom.disable();
+      vis.theMap.touchZoom.disable();
+      vis.theMap.keyboard.disable();
+    } else {
+      vis.theMap.dragging.enable();
+      vis.theMap.boxZoom.enable();
+      vis.theMap.doubleClickZoom.enable();
+      vis.theMap.scrollWheelZoom.enable();
+      vis.theMap.touchZoom.enable();
+      vis.theMap.keyboard.enable();
+
+      vis.currentBrushSelection = null;
+      vis.selectedData = [];
+      vis.brushG.call(vis.brush.move, null);
+      vis.Dots
+        .classed('selected', false)
+        .attr('opacity', 1);
+
+      vis.config.onSelectionChange(null);
+    }
+  }
+
+  /**
+   * Toggles brushing mode on/off.
+   * @returns {boolean} - true if brush mode is now enabled, false if disabled
+   */
+  toggleBrushingMode() {
+    this.setBrushingEnabled(!this.brushingEnabled);
+    return this.brushingEnabled;
   }
 
   /**
@@ -210,4 +369,5 @@ class LeafletMap {
         ext: 'png'
     }).addTo(vis.theMap);
   }
+
 }
