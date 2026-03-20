@@ -102,10 +102,29 @@ class Timeline {
             weeklyCounts.set(weekStart, (weeklyCounts.get(weekStart) || 0) + 1);
         });
 
-        // Convert weeeklyCounts to an array sorted by date
+        // Convert weeklyCounts to an array sorted by date
         vis.aggregatedData = Array.from(weeklyCounts, ([weekStart, count]) => ({ date: new Date(weekStart), count }))
             .sort((a, b) => a.date - b.date);
 
+        // Pre-compute lookup maps
+        vis.weekToSRsMap = new Map();
+        vis.srToWeekMap = new Map();
+        vis.data.forEach(d => {
+            const date = new Date(d.DATE_CREATED);
+
+            // Skip if the date string is missing or invalid
+            if (isNaN(date)) return;
+
+            // Find the starting date of the week
+            const weekTimestamp = +d3.timeWeek.floor(date);
+
+            // Add the current Service Request number to its corresponding week's array
+            if (!vis.weekToSRsMap.has(weekTimestamp)) vis.weekToSRsMap.set(weekTimestamp, []);
+            vis.weekToSRsMap.get(weekTimestamp).push(d.SR_NUMBER);
+
+            // Map individual Service Request number back to the timestamp
+            vis.srToWeekMap.set(d.SR_NUMBER, weekTimestamp);
+        });
 
         // Set scale domains based on date and count data
         vis.xScale.domain(d3.extent(vis.aggregatedData, d => d.date));
@@ -130,17 +149,10 @@ class Timeline {
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
             .on('mouseover', function(event, d) {
-                // calculate the end of the hovered week so we have a date range
                 const weekStart = d.date;
-                const weekEnd = d3.timeWeek.offset(weekStart, 1); // adds exactly 1 week
 
-                // filter the data to find items that fall within this date range and map them to just their SR_NUMBERs
-                const srNumbersInWeek = vis.data
-                    .filter(item => {
-                        const itemDate = new Date(item.DATE_CREATED);
-                        return itemDate >= weekStart && itemDate < weekEnd;
-                    })
-                    .map(item => item.SR_NUMBER);
+                // get SR_NUMBERs for this week
+                const srNumbersInWeek = vis.weekToSRsMap.get(+weekStart) || [];
 
                 // highlight all requests in that given week
                 highlightRequests(srNumbersInWeek);
