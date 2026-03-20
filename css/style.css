@@ -192,12 +192,7 @@ body {
 .bar,
 .timeline-point,
 .dot {
-  transition: opacity 0.2s ease;
   cursor: pointer;
-}
-
-.unfocused {
-  opacity: 0.25;
 }
 
 .focused {
@@ -209,7 +204,15 @@ body {
   opacity: 0.9;
 }
 
-.dot.unfocused {
-  stroke: none;
+.has-focus .dot:not(.focused) {
   opacity: 0.15;
+  stroke: none;
+}
+
+.has-focus .bar:not(.focused) {
+  opacity: 0.25;
+}
+
+.has-focus .timeline-point:not(.focused) {
+  opacity: 0.25;
 }

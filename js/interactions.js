@@ -56,54 +56,51 @@ function highlightRequests(hoveredSRs = []) {
 
     const SRsToFocusSet = new Set(SRsToFocus);
 
-    // use cached D3 selection to avoid a fresh querySelectorAll on every call
-    leafletMap.Dots
-        .classed('unfocused', d => !SRsToFocusSet.has(d.SR_NUMBER))
-        .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER));
+    // mark all visualization contains as in a focused mode
+    // CSS automatically handles dimming all non-focussed descendants
+    if (leafletMap) {
+        leafletMap.svg.classed('has-focus', true);
 
-    // increase focused dot size
-    leafletMap.Dots.filter(d => SRsToFocusSet.has(d.SR_NUMBER))
-        .attr('r', function() {
-            return parseFloat(d3.select(this).attr('base-r')) + 2;
-        });
+        // clear .focused from only the previously-focused dots
+        leafletMap.Dots.filter('.focused')
+            .classed('focused', false)
+            .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')); });
 
-    // bars and timeline-points don't have SR_NUMBER data - start them all unfocused,
-    // then use pre-computed maps to mark only the matching bins as focused
-    d3.selectAll('.bar, .timeline-point').classed('unfocused', true).classed('focused', false);
+        // apply new .focused to all now-focused dots
+        // TODO this part could be improved
+        leafletMap.Dots.filter(d => SRsToFocusSet.has(d.SR_NUMBER))
+            .classed('focused', true)
+            .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')) + 2; });
+    }
 
     // update bar charts to highlight categories containing the focused Service Requests
-    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].forEach(vis => {
-        const matchingCategories = new Set();
-
+    d3.selectAll('svg.chart-container').classed('has-focus', true);
+    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].filter(Boolean).forEach(vis => {
         // find all unique categories
+        const matchingCategories = new Set();
         SRsToFocus.forEach(sr => {
             const cat = vis.srToBinMap?.get(sr);
             if (cat !== undefined) matchingCategories.add(cat);
         });
 
-        // apply highlight to the bars
-        vis.chart.selectAll('.bar').each((d, i, nodes) => {
-            if (matchingCategories.has(d.category)) {
-                d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
-            }
-        });
+        // activate .focused class based on found matching categories
+        vis.chart.selectAll('.bar').classed('focused', d => matchingCategories.has(d.category));
     });
 
     // update the timeline chart to highlight weeks containing the focused Service Requests
-    const matchingWeeks = new Set();
+    if (timeline) {
+        timeline.svg.classed('has-focus', true);
 
-    // find all unique weeks
-    SRsToFocus.forEach(sr => {
-        const week = timeline.srToWeekMap?.get(sr);
-        if (week !== undefined) matchingWeeks.add(week);
-    });
+        // find all unique weeks
+        const matchingWeeks = new Set();
+        SRsToFocus.forEach(sr => {
+            const week = timeline.srToWeekMap?.get(sr);
+            if (week !== undefined) matchingWeeks.add(week);
+        });
 
-    // apply highlight to timeline points
-    timeline.svg.selectAll('.timeline-point').each((d, i, nodes) => {
-        if (matchingWeeks.has(+d.date)) {
-            d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
-        }
-    });
+        // activate .focused class based on found matching weeks 
+        timeline.svg.selectAll('.timeline-point').classed('focused', d => matchingWeeks.has(+d.date));
+    }
 }
 
 /**
@@ -121,12 +118,16 @@ function unhighlightRequest() {
     if (selectedRequests.length > 0) {
         highlightRequests();
     } else {
-        d3.selectAll('.bar, .timeline-point, .dot').classed('unfocused', false).classed('focused', false);
-
-        // return dots back to original size
-        d3.selectAll('.dot').attr('r', function() {
-            return parseFloat(d3.select(this).attr('base-r'));
-        });
+        // Remove focus mode from all containers — CSS cascade instantly un-dims everything
+        if (leafletMap) {
+            leafletMap.svg.classed('has-focus', false);
+            leafletMap.Dots.filter('.focused')
+                .classed('focused', false)
+                .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')); });
+        }
+        d3.selectAll('svg.chart-container').classed('has-focus', false);
+        d3.selectAll('.bar.focused, .timeline-point.focused').classed('focused', false);
+        if (timeline) timeline.svg.classed('has-focus', false);
     }
 }
 
