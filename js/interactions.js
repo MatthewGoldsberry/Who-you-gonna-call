@@ -32,20 +32,21 @@ d3.select('#mapBackground').on('change', function() {
  * @param {Array<string>} hoveredSRs - SR_NUMBERs that are currently being hovered
  */
 function highlightRequests(hoveredSRs = []) {
+    // use a Set for quick lookups
+    const selectedSet = new Set(selectedRequests);
+
     // determine which hovered SRs actually get to be focussed
     // only want to highlight the full bin if no SRs in that bin are already selected
     // if some are selected, only focus the intersection to signal that clicking that will result in a deselect
-    const filteredHovers = hoveredSRs.filter(sr => {
-        // any request already selected will always be focussed
-        if (selectedRequests.includes(sr)) return true;
-
-        // if a request is not selected, only focus it if all other requests in that bin are also not selected
-        return !hoveredSRs.some(hSR => selectedRequests.includes(hSR));
+    const anyHoveredIsSelected = hoveredSRs.some(hSR => selectedSet.has(hSR));
+    const filteredHovers = hoveredSRs.filter(SR => {
+        if (selectedSet.has(SR)) return true;
+        return !anyHoveredIsSelected;
     });
 
     // combine hovered with selectedRequests to ensure everything that needs to get highlighted gets handled below
     // the set allows for an easy method to clean out any duplicate values
-    const SRsToFocus = [...new Set([...filteredHovers, ...selectedRequests])].filter(SR => SR && typeof SR === 'string');;
+    const SRsToFocus = [...new Set([...filteredHovers, ...selectedRequests])].filter(SR => SR && typeof SR === 'string');
 
     // early exit if there are no hovered elements or selected requests
     if (SRsToFocus.length === 0) {
@@ -55,40 +56,53 @@ function highlightRequests(hoveredSRs = []) {
 
     const SRsToFocusSet = new Set(SRsToFocus);
 
-    // focus objects in focus set and unfocus all others
-    d3.selectAll('.dot, .timeline-point, .bar')
+    // use cached D3 selection to avoid a fresh querySelectorAll on every call
+    leafletMap.Dots
         .classed('unfocused', d => !SRsToFocusSet.has(d.SR_NUMBER))
         .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER));
 
-    // increase dot size 
-    d3.selectAll('.dot.focused').attr('r', function() {
-        return parseFloat(d3.select(this).attr('base-r')) + 2;
-    });
+    // increase focused dot size
+    leafletMap.Dots.filter(d => SRsToFocusSet.has(d.SR_NUMBER))
+        .attr('r', function() {
+            return parseFloat(d3.select(this).attr('base-r')) + 2;
+        });
 
-    // go into each bar chart and figure out which bin the request is in, then focus that bin
+    // bars and timeline-points don't have SR_NUMBER data - start them all unfocused,
+    // then use pre-computed maps to mark only the matching bins as focused
+    d3.selectAll('.bar, .timeline-point').classed('unfocused', true).classed('focused', false);
+
+    // update bar charts to highlight categories containing the focused Service Requests
     [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].forEach(vis => {
-        const matchingCategories = vis.data
-            .filter(d => SRsToFocusSet.has(d.SR_NUMBER))
-            .map(d => d[vis.config.attributeKey]);
+        const matchingCategories = new Set();
 
+        // find all unique categories
+        SRsToFocus.forEach(sr => {
+            const cat = vis.srToBinMap?.get(sr);
+            if (cat !== undefined) matchingCategories.add(cat);
+        });
+
+        // apply highlight to the bars
         vis.chart.selectAll('.bar').each((d, i, nodes) => {
-            if (matchingCategories.includes(d.category)) {
+            if (matchingCategories.has(d.category)) {
                 d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
             }
         });
     });
 
-    // go into the timeline and figure out which bin of weeks data the request is in, then focus that bin
-    [timeline].forEach(vis => {
-        const matchingWeeks = vis.data
-            .filter(d => SRsToFocus.includes(d.SR_NUMBER))
-            .map(d => +d3.timeWeek.floor(new Date(d.DATE_CREATED))); 
+    // update the timeline chart to highlight weeks containing the focused Service Requests
+    const matchingWeeks = new Set();
 
-        vis.svg.selectAll('.timeline-point').each((d, i, nodes) => {
-            if (matchingWeeks.includes(+d.date)) {
-                d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
-            }
-        });
+    // find all unique weeks
+    SRsToFocus.forEach(sr => {
+        const week = timeline.srToWeekMap?.get(sr);
+        if (week !== undefined) matchingWeeks.add(week);
+    });
+
+    // apply highlight to timeline points
+    timeline.svg.selectAll('.timeline-point').each((d, i, nodes) => {
+        if (matchingWeeks.has(+d.date)) {
+            d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
+        }
     });
 }
 
