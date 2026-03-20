@@ -111,7 +111,8 @@ class LeafletMap {
       .attr('r', vis.dynamicRadius)
       .attr('class', d => `dot request-${d.SR_NUMBER}`)
       .on('mouseover', function (event, d) { 
-        highlightRequest(d.SR_NUMBER);
+        highlightRequest(d.SR_NUMBER, { mapDotMode: 'show' });
+        d3.select(this).attr('r', parseFloat(d3.select(this).attr('base-r')) + 2);
 
         // create a tool tip
         d3.select('#tooltip')

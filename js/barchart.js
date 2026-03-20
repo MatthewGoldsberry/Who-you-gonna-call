@@ -108,16 +108,27 @@ class BarChart {
     updateVis() {
         let vis = this;
 
-        // group the data by the configured attribute and count the occurrences
-        const counts = d3.rollups(
-            vis.data, 
-            v => v.length, 
-            d => d[vis.config.attributeKey] 
-        );
+        // build lookup maps once per chart update to avoid repeated full-data filtering during hover interactions
+        vis.categoryToSRNumbers = new Map();
+        vis.srToCategory = new Map();
 
-        vis.groupedData = Array.from(counts, ([category, count]) => ({
-            category: category || 'UNSPECIFIED',
-            count: count
+        vis.data.forEach(item => {
+            const category = item[vis.config.attributeKey] || 'UNSPECIFIED';
+            const srNumber = item.SR_NUMBER;
+
+            if (!vis.categoryToSRNumbers.has(category)) {
+                vis.categoryToSRNumbers.set(category, []);
+            }
+
+            if (srNumber && typeof srNumber === 'string') {
+                vis.categoryToSRNumbers.get(category).push(srNumber);
+                vis.srToCategory.set(srNumber, category);
+            }
+        });
+
+        vis.groupedData = Array.from(vis.categoryToSRNumbers, ([category, srNumbers]) => ({
+            category,
+            count: srNumbers.length
         }));
 
         vis.groupedData.sort((a, b) => b.count - a.count);
@@ -167,12 +178,10 @@ class BarChart {
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
-                // get the SR_NUMBERs of the selected bin
-                const srNumbersInBin = vis.data
-                    .filter(item => item[vis.config.attributeKey] === d.category)
-                    .map(item => item.SR_NUMBER);
+                // get the SR_NUMBERs of the selected bin from the precomputed lookup map
+                const srNumbersInBin = vis.categoryToSRNumbers.get(d.category) || [];
 
-                highlightRequests(srNumbersInBin);
+                highlightRequests(srNumbersInBin, { mapDotMode: 'hide' });
                 // tooltip creation
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');

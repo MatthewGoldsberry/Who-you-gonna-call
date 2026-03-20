@@ -30,17 +30,21 @@ d3.select('#mapBackground').on('change', function() {
 /**
  * Highlights the selected requests and all requests currently being hovered in all visualizations, while dimming all others
  * @param {Array<string>} hoveredSRs - SR_NUMBERs that are currently being hovered
+ * @param {Object} options - rendering options for highlight behavior
+ * @param {string} options.mapDotMode - controls non-focused map dots: 'dim' | 'show' | 'hide'
  */
-function highlightRequests(hoveredSRs = []) {
+function highlightRequests(hoveredSRs = [], { mapDotMode = 'dim' } = {}) {
+    const selectedRequestsSet = new Set(selectedRequests);
+
     // determine which hovered SRs actually get to be focussed
     // only want to highlight the full bin if no SRs in that bin are already selected
     // if some are selected, only focus the intersection to signal that clicking that will result in a deselect
     const filteredHovers = hoveredSRs.filter(sr => {
         // any request already selected will always be focussed
-        if (selectedRequests.includes(sr)) return true;
+        if (selectedRequestsSet.has(sr)) return true;
 
         // if a request is not selected, only focus it if all other requests in that bin are also not selected
-        return !hoveredSRs.some(hSR => selectedRequests.includes(hSR));
+        return !hoveredSRs.some(hSR => selectedRequestsSet.has(hSR));
     });
 
     // combine hovered with selectedRequests to ensure everything that needs to get highlighted gets handled below
@@ -55,24 +59,41 @@ function highlightRequests(hoveredSRs = []) {
 
     const SRsToFocusSet = new Set(SRsToFocus);
 
-    // focus objects in focus set and unfocus all others
-    d3.selectAll('.dot, .timeline-point, .bar')
+    // focus bars and timeline points in focus set and unfocus all others
+    d3.selectAll('.timeline-point, .bar')
         .classed('unfocused', d => !SRsToFocusSet.has(d.SR_NUMBER))
         .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER));
 
-    // increase dot size 
-    d3.selectAll('.dot.focused').attr('r', function() {
-        return parseFloat(d3.select(this).attr('base-r')) + 2;
-    });
+    // map dots can be dimmed, left visible, or hidden when not focused
+    if (mapDotMode === 'dim') {
+        d3.selectAll('.dot')
+            .classed('unfocused', d => !SRsToFocusSet.has(d.SR_NUMBER))
+            .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER))
+            .classed('hidden', false);
+    } else if (mapDotMode === 'hide') {
+        d3.selectAll('.dot')
+            .classed('unfocused', false)
+            .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER))
+            .classed('hidden', d => !SRsToFocusSet.has(d.SR_NUMBER));
+    } else {
+        d3.selectAll('.dot')
+            .classed('unfocused', false)
+            .classed('focused', d => SRsToFocusSet.has(d.SR_NUMBER))
+            .classed('hidden', false);
+    }
 
     // go into each bar chart and figure out which bin the request is in, then focus that bin
     [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].forEach(vis => {
-        const matchingCategories = vis.data
-            .filter(d => SRsToFocusSet.has(d.SR_NUMBER))
-            .map(d => d[vis.config.attributeKey]);
+        if (!vis || !vis.chart || !vis.srToCategory) return;
+
+        const matchingCategories = new Set();
+        SRsToFocusSet.forEach(srNumber => {
+            const category = vis.srToCategory.get(srNumber);
+            if (category) matchingCategories.add(category);
+        });
 
         vis.chart.selectAll('.bar').each((d, i, nodes) => {
-            if (matchingCategories.includes(d.category)) {
+            if (matchingCategories.has(d.category)) {
                 d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
             }
         });
@@ -80,12 +101,16 @@ function highlightRequests(hoveredSRs = []) {
 
     // go into the timeline and figure out which bin of weeks data the request is in, then focus that bin
     [timeline].forEach(vis => {
-        const matchingWeeks = vis.data
-            .filter(d => SRsToFocus.includes(d.SR_NUMBER))
-            .map(d => +d3.timeWeek.floor(new Date(d.DATE_CREATED))); 
+        if (!vis || !vis.svg || !vis.srToWeek) return;
+
+        const matchingWeeks = new Set();
+        SRsToFocusSet.forEach(srNumber => {
+            const week = vis.srToWeek.get(srNumber);
+            if (week !== undefined) matchingWeeks.add(week);
+        });
 
         vis.svg.selectAll('.timeline-point').each((d, i, nodes) => {
-            if (matchingWeeks.includes(+d.date)) {
+            if (matchingWeeks.has(+d.date)) {
                 d3.select(nodes[i]).classed('unfocused', false).classed('focused', true);
             }
         });
@@ -96,8 +121,8 @@ function highlightRequests(hoveredSRs = []) {
  * Wrapper around highlightRequests that takes a single SR_NUMBER as an argument
  * @param {string} srNumber - SR_NUMBER to focus
  */
-function highlightRequest(srNumber) {
-    highlightRequests([srNumber]);
+function highlightRequest(srNumber, options = {}) {
+    highlightRequests([srNumber], options);
 }
 
 /**
@@ -107,7 +132,10 @@ function unhighlightRequest() {
     if (selectedRequests.length > 0) {
         highlightRequests();
     } else {
-        d3.selectAll('.bar, .timeline-point, .dot').classed('unfocused', false).classed('focused', false);
+        d3.selectAll('.bar, .timeline-point, .dot')
+            .classed('unfocused', false)
+            .classed('focused', false)
+            .classed('hidden', false);
 
         // return dots back to original size
         d3.selectAll('.dot').attr('r', function() {

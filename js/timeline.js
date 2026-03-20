@@ -88,18 +88,27 @@ class Timeline {
     updateVis() {
         let vis = this;
 
-        // Convert DATE_CREATED to dates and filter out invalid values.
-        const dateArray = vis.data
-            .map(d => ({
-                date: new Date(d.DATE_CREATED)
-            }))
-            .filter(d => d.date && !isNaN(d.date));
+        // Precompute week lookup maps once per timeline update to avoid repeated full-data filtering during hover.
+        vis.weekToSRNumbers = new Map();
+        vis.srToWeek = new Map();
 
         // Count how many requests fall into each week.
         const weeklyCounts = new Map();
-        dateArray.forEach(row => {
-            const weekStart = +d3.timeWeek.floor(row.date);
+        vis.data.forEach(item => {
+            const itemDate = new Date(item.DATE_CREATED);
+            if (!itemDate || isNaN(itemDate)) return;
+
+            const weekStart = +d3.timeWeek.floor(itemDate);
             weeklyCounts.set(weekStart, (weeklyCounts.get(weekStart) || 0) + 1);
+
+            const srNumber = item.SR_NUMBER;
+            if (srNumber && typeof srNumber === 'string') {
+                if (!vis.weekToSRNumbers.has(weekStart)) {
+                    vis.weekToSRNumbers.set(weekStart, []);
+                }
+                vis.weekToSRNumbers.get(weekStart).push(srNumber);
+                vis.srToWeek.set(srNumber, weekStart);
+            }
         });
 
         // Convert weeeklyCounts to an array sorted by date
@@ -130,20 +139,11 @@ class Timeline {
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
             .on('mouseover', function(event, d) {
-                // calculate the end of the hovered week so we have a date range
-                const weekStart = d.date;
-                const weekEnd = d3.timeWeek.offset(weekStart, 1); // adds exactly 1 week
-
-                // filter the data to find items that fall within this date range and map them to just their SR_NUMBERs
-                const srNumbersInWeek = vis.data
-                    .filter(item => {
-                        const itemDate = new Date(item.DATE_CREATED);
-                        return itemDate >= weekStart && itemDate < weekEnd;
-                    })
-                    .map(item => item.SR_NUMBER);
+                // get the SR_NUMBERs in this week from the precomputed lookup map
+                const srNumbersInWeek = vis.weekToSRNumbers.get(+d.date) || [];
 
                 // highlight all requests in that given week
-                highlightRequests(srNumbersInWeek);
+                highlightRequests(srNumbersInWeek, { mapDotMode: 'hide' });
                 
                 d3.select('#tooltip')
                     .style('opacity', 1)

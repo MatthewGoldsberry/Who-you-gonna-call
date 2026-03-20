@@ -206,10 +206,15 @@ body {
 }
 
 .dot.focused {
-  opacity: 0.9;
+  stroke: black;
+  stroke-width: 1px;
 }
 
 .dot.unfocused {
   stroke: none;
   opacity: 0.15;
+}
+
+.dot.hidden {
+  display: none;
 }
