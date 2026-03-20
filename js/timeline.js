@@ -102,20 +102,40 @@ class Timeline {
             weeklyCounts.set(weekStart, (weeklyCounts.get(weekStart) || 0) + 1);
         });
 
-        // Convert weeeklyCounts to an array sorted by date
+        // Convert weeklyCounts to an array sorted by date
         vis.aggregatedData = Array.from(weeklyCounts, ([weekStart, count]) => ({ date: new Date(weekStart), count }))
             .sort((a, b) => a.date - b.date);
 
+        // Pre-compute lookup maps
+        vis.weekToSRsMap = new Map();
+        vis.srToWeekMap = new Map();
+        vis.data.forEach(d => {
+            const date = new Date(d.DATE_CREATED);
+
+            // Skip if the date string is missing or invalid
+            if (isNaN(date)) return;
+
+            // Find the starting date of the week
+            const weekTimestamp = +d3.timeWeek.floor(date);
+
+            // Add the current Service Request number to its corresponding week's array
+            if (!vis.weekToSRsMap.has(weekTimestamp)) vis.weekToSRsMap.set(weekTimestamp, []);
+            vis.weekToSRsMap.get(weekTimestamp).push(d.SR_NUMBER);
+
+            // Map individual Service Request number back to the timestamp
+            vis.srToWeekMap.set(d.SR_NUMBER, weekTimestamp);
+        });
 
         // Sets scale domains based on date and count data
         // Handles the case where the brushed dataset is empty
-        if (vis.aggregatedData.length === 0) {
-            const now = new Date();
-            vis.xScale.domain([d3.timeWeek.floor(now), d3.timeWeek.offset(d3.timeWeek.floor(now), 1)]);
+        if (weeklyCounts.size === 0) {
+            const nowFloor = +d3.timeWeek.floor(Date.now());
+            vis.xScale.domain([nowFloor, +d3.timeWeek.offset(nowFloor, 1)]);
             vis.yScale.domain([0, 1]);
         } else {
-            vis.xScale.domain(d3.extent(vis.aggregatedData, d => d.date));
-            vis.yScale.domain([0, d3.max(vis.aggregatedData, d => d.count) || 1]);
+            const [minTs, maxTs] = d3.extent(weeklyCounts.keys());
+            vis.xScale.domain([minTs, maxTs]);
+            vis.yScale.domain([0, d3.max(weeklyCounts.values())]);
         }
 
         // call axes
@@ -137,6 +157,14 @@ class Timeline {
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
             .on('mouseover', function(event, d) {
+                const weekStart = d.date;
+
+                // get SR_NUMBERs for this week
+                const srNumbersInWeek = vis.weekToSRsMap.get(+weekStart) || [];
+
+                // highlight all requests in that given week
+                highlightRequests(srNumbersInWeek);
+                
                 d3.select('#tooltip')
                     .style('opacity', 1)
                     .html(`
@@ -152,7 +180,10 @@ class Timeline {
                     .style('top', (event.pageY - 28) + 'px');
             })
             .on('mouseleave', function() {
+                unhighlightRequest();
                 d3.select('#tooltip').style('opacity', 0);
             });
+
+        highlightRequest();
     }
 }

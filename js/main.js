@@ -5,6 +5,8 @@ let requestMethods;
 let serviceDeptDistribution;
 let priorityDistribution;
 
+let selectedRequests = [];
+
 let fullData = [];
 
 d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv')

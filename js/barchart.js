@@ -164,9 +164,28 @@ class BarChart {
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
+        // pre-compute lookup maps
+        vis.binToSRsMap = new Map();
+        vis.srToBinMap = new Map();
+        vis.data.forEach(d => {
+            // get category value based on the selected attribute key
+            const category = d[vis.config.attributeKey] || 'UNSPECIFIED';
+
+            // add the current Service Request number to corresponding category's array
+            if (!vis.binToSRsMap.has(category)) vis.binToSRsMap.set(category, []);
+            vis.binToSRsMap.get(category).push(d.SR_NUMBER);
+
+            // map individual Service Request number back to the category (bin)
+            vis.srToBinMap.set(d.SR_NUMBER, category);
+        });
+
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
+                // get the SR_NUMBERs of the selected bin
+                const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
+
+                highlightRequests(srNumbersInBin);
                 // tooltip creation
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
@@ -196,6 +215,7 @@ class BarChart {
                 tooltip.style('left', xPosition + 'px')
             })
             .on('mouseout', () => {
+                unhighlightRequest();
                 // remove tooltip
                 d3.select('#tooltip').style('opacity', 0);
             })
@@ -241,5 +261,7 @@ class BarChart {
                 .attr('dy', '.15em')
                 .attr('transform', 'rotate(-45)');
         } // default to horizontal
+
+        highlightRequest();
     }
 }

@@ -112,12 +112,11 @@ class LeafletMap {
       .attr("stroke", "black")
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
+      .attr('base-r', vis.dynamicRadius)
+      .attr('r', vis.dynamicRadius)
+      .attr('class', d => `dot request-${d.SR_NUMBER}`)
       .on('mouseover', function (event, d) { 
-        // function to add mouseover event
-        d3.select(this).transition() 
-          .duration('150')
-          .attr("fill", "red")
-          .attr('r', vis.dynamicRadius + 2);
+        highlightRequest(d.SR_NUMBER);
 
         // create a tool tip
         d3.select('#tooltip')
@@ -139,7 +138,8 @@ class LeafletMap {
           .style('left', (event.pageX + 10) + 'px')
           .style('top', (event.pageY + 10) + 'px');
       })
-      .on('mouseleave', function () {
+      .on('mouseout', function () {
+        unhighlightRequest();
         d3.select(this).transition() 
           .duration('150')
           .attr("fill", d => vis.getColor(d))  
@@ -186,12 +186,16 @@ class LeafletMap {
     const currentZoom = vis.theMap.getZoom();
     vis.dynamicRadius = currentZoom - 8;
 
-    // redraw based on new zoom- need to recalculate on-screen position
+    // redraw based on new zoom; need to recalculate on-screen position
     vis.Dots
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr("fill", d => vis.getColor(d))
-      .attr("r", vis.dynamicRadius);
+      .attr("base-r", vis.dynamicRadius)
+      .attr("r", (d, i, nodes) => {
+          const isFocused = d3.select(nodes[i]).classed('focused');
+          return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
+      });
 
 
     if (vis.currentBrushSelection) {
@@ -201,6 +205,8 @@ class LeafletMap {
         .classed('selected', false)
         .attr('opacity', 1);
     }
+
+    highlightRequest();
   }
 
   /**
