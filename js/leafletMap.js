@@ -29,7 +29,7 @@ class LeafletMap {
       onSelectionChange: _config.onSelectionChange || (() => {})
     }
     this.data = _data;
-    this.colorBy = 'neighborhood';
+    this.colorBy = 'serviceType';
     this.mapBackground = 'street';
     this.currentBrushSelection = null; // Stores the current brush coordinate bounds
     this.selectedData = [];
@@ -77,6 +77,10 @@ class LeafletMap {
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
     // TODO some color theory work needs to be done here
+
+    vis.colorScaleServiceType = d3.scaleOrdinal()
+        .domain(['DUMPING', 'GRAFFITI', 'LITTERING', 'TIRES', 'TRASH', 'VACANT'])
+        .range(['#41afaa', '#466eb4', '#00a0e1', '#e6a532', '#d7642c', '#af4b91']);
 
     // create color scale for the priority of request
     vis.colorScalePriority = d3.scaleOrdinal()
@@ -318,6 +322,7 @@ class LeafletMap {
    */
   getColor(d) {
     let vis = this;
+    if (vis.colorBy === 'serviceType') return vis.colorScaleServiceType(d.SR_TYPE);
     if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
     if (vis.colorBy === 'neighborhood') return vis.colorScaleNeighborhood(d.NEIGHBORHOOD);
     if (vis.colorBy === 'priority') return vis.colorScalePriority(d.PRIORITY);
