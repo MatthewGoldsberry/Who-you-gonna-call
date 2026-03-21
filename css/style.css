@@ -212,15 +212,6 @@ body {
   margin-right: 4px;
 }
 
-.map-dot {
-  transition: opacity 0.12s ease;
-}
-
-.map-dot.selected {
-  stroke: #111;
-  stroke-width: 1.5px;
-}
-
 .brush .selection {
   fill: rgba(42, 109, 255, 0.2);
   stroke: #2a6dff;

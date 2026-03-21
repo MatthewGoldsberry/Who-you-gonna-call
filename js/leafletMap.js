@@ -108,7 +108,6 @@ class LeafletMap {
     vis.Dots = vis.svg.selectAll('circle')
       .data(vis.data)
       .join('circle')
-      .attr('class', 'map-dot')
       .attr("stroke", "black")
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
@@ -140,13 +139,7 @@ class LeafletMap {
       })
       .on('mouseout', function () {
         unhighlightRequest();
-        d3.select(this).transition() 
-          .duration('150')
-          .attr("fill", d => vis.getColor(d))  
-          .attr('r', vis.dynamicRadius)
-
-        d3.select('#tooltip').style('opacity', 0); // turn off the tooltip
-
+        d3.select('#tooltip').style('opacity', 0);
       })
 
     // handler here for updating the map, as you zoom in and out           
@@ -174,8 +167,6 @@ class LeafletMap {
     });
   }
 
-  
-
   /**
    *  update the visualization 
    */
@@ -200,10 +191,6 @@ class LeafletMap {
 
     if (vis.currentBrushSelection) {
       vis.applySelectionFromBounds(vis.currentBrushSelection, true);
-    } else {
-      vis.Dots
-        .classed('selected', false)
-        .attr('opacity', 1);
     }
 
     highlightRequest();
@@ -221,11 +208,7 @@ class LeafletMap {
     if (!selection) {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
-      // Make all dots fully visible again
-      vis.Dots
-        .classed('selected', false)
-        .attr('opacity', 1);
-      // Notify linked visualizations (charts) to restore full dataset
+      resetSelection();
       vis.config.onSelectionChange(null);
       return;
     }
@@ -257,13 +240,10 @@ class LeafletMap {
 
     vis.selectedData = Array.from(selectedSet);
 
-    // Update dot appearance: selected dots stay fully opaque with bold stroke,
-    // unselected dots fade to 20% opacity
-    vis.Dots
-      .classed('selected', d => selectedSet.has(d))
-      .attr('opacity', d => selectedSet.has(d) ? 1 : 0.2);
+    // Push brushed SR_NUMBERs into the shared selectedRequests and highlight selection
+    selectedRequests = vis.selectedData.map(d => d.SR_NUMBER);
+    highlightRequests();
 
-    // Notify any subscribers (dashboard) of the new selection
     if (notify) {
       vis.config.onSelectionChange(vis.selectedData);
     }
@@ -317,10 +297,7 @@ class LeafletMap {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
       vis.brushG.call(vis.brush.move, null);
-      vis.Dots
-        .classed('selected', false)
-        .attr('opacity', 1);
-
+      resetSelection();
       vis.config.onSelectionChange(null);
     }
   }
