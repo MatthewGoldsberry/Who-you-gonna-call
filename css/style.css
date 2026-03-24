@@ -112,7 +112,8 @@ body {
   outline: none;
 }
 
-.brush-button {
+.brush-button,
+.heatmap-button {
   border: 1px solid lightgrey;
   background-color: rgba(255, 255, 255, 0.95);
   color: #1f2937;
@@ -126,12 +127,14 @@ body {
   transition: all 0.2s ease;
 }
 
-.brush-button:hover {
+.brush-button:hover,
+.heatmap-button:hover {
   background-color: white;
   border-color: darkgrey;
 }
 
-.brush-button.active {
+.brush-button.active,
+.heatmap-button.active {
   background-color: #2a6dff;
   border-color: #2a6dff;
   color: white;
@@ -220,6 +223,11 @@ body {
 
 #my-map.brush-enabled {
   cursor: crosshair;
+}
+
+.heatmap-canvas {
+  z-index: 350;
+  opacity: 0.8;
 }
 
 /* --- Focussing Configurations -- */
