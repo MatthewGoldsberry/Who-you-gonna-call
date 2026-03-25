@@ -36,10 +36,25 @@ body {
   border-bottom: 1px solid lightgrey;
 }
 
+.header-title-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
 .dashboard-header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
+  line-height: 1.1;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  font-weight: 400;
+  color: #bfdbfe;
+  letter-spacing: 0.02em;
 }
 
 .dashboard-header p {
