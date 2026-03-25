@@ -46,7 +46,7 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
         timeline.updateVis();
 
         // Update all bar charts to reflect counts from the active dataset
-        requestsPerNeighborhood = updateBarChart(activeData, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear');
+        requestsPerNeighborhood = updateBarChart(activeData, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear', NEIGHBORHOOD_ABBREVIATIONS);
         requestMethods = updateBarChart(activeData, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Submission Method', 'Request Submission Methods', 'Requests', 'horizontal', 'log');
         serviceDeptDistribution = updateBarChart(activeData, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Requests', 'angled', 'sqrt');
         priorityDistribution = updateBarChart(activeData, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Requests', 'horizontal', 'sqrt');
@@ -71,7 +71,7 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
     timeline.updateVis();
 
     // initialize bar charts
-    requestsPerNeighborhood = updateBarChart(validData, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear');
+    requestsPerNeighborhood = updateBarChart(validData, 'NEIGHBORHOOD', requestsPerNeighborhood, '#requests-per-neighborhood', 'Neighborhood', 'Service Requests by Neighborhood', 'Requests', 'vertical', 'linear', NEIGHBORHOOD_ABBREVIATIONS);
     requestMethods = updateBarChart(validData, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Submission Method', 'Request Submission Methods', 'Requests', 'horizontal', 'log');
     serviceDeptDistribution = updateBarChart(validData, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Requests', 'angled', 'sqrt');
     priorityDistribution = updateBarChart(validData, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Requests', 'horizontal', 'sqrt');

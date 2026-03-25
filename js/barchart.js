@@ -23,7 +23,7 @@ class BarChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth || 800,
             containerHeight: _config.containerHeight || 300,
-            margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 70 },
+            margin: _config.margin || { top: 50, right: 20, bottom: _config.xAxisTickRotation === 'vertical' ? 72 : 50, left: 70 },
             tooltipPadding: _config.tooltipPadding || 15,
             attributeKey: _config.attributeKey,
             category: _config.category,
@@ -31,6 +31,7 @@ class BarChart {
             yAxisLabel: _config.yAxisLabel,
             yScaleType: _config.yScaleType || 'linear',
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
+            labelMap: _config.labelMap || null,
         }
         this.data = _data;
         this.initVis();
@@ -233,9 +234,10 @@ class BarChart {
                 d3.select('#tooltip').style('opacity', 0);
             })
 
-        // update axis labels and ticks
+        // update axis labels and ticks; apply abbreviated labels if a labelMap was provided
         vis.xAxis = d3.axisBottom(vis.xScale)
-            .tickSizeOuter(0);
+            .tickSizeOuter(0)
+            .tickFormat(d => vis.config.labelMap?.[d] ?? d);
 
         // update axis
         vis.xAxisG.call(vis.xAxis);

@@ -33,4 +33,4 @@ For the purpose of effectively showing the different visual urban disorders when
 
 ### Removal of Unspecified Neighboorhoods
 
-All rows that did not have a value for neighborhood where removed. In most of these were outside the city of Cincinnati and only a select couple where within the bounds of the city. 
+All rows that did not have a value for neighborhood where removed. In most of these were outside the city of Cincinnati and only a select couple where within the bounds of the city.
