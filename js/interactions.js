@@ -78,7 +78,7 @@ function highlightRequests(hoveredSRs = []) {
 
     // update bar charts to highlight categories containing the focused Service Requests
     d3.selectAll('svg.chart-container').classed('has-focus', true);
-    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].filter(Boolean).forEach(vis => {
+    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution, serviceTypeDistribution].filter(Boolean).forEach(vis => {
         // find all unique categories
         const matchingCategories = new Set();
         SRsToFocus.forEach(sr => {
