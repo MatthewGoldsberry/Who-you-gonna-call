@@ -32,6 +32,7 @@ class BarChart {
             yScaleType: _config.yScaleType || 'linear',
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
             labelMap: _config.labelMap || null,
+            wrapLabels: _config.wrapLabels || false,
         }
         this.data = _data;
         this.initVis();
@@ -244,14 +245,30 @@ class BarChart {
         const xTicks = vis.xAxisG.selectAll('.tick text')
             .style('font-size', '0.85rem');
 
+        // if wrapLabels, split each tick label at its spaces and put each word into a separate line
+        if (vis.config.wrapLabels) {
+            xTicks.each(function() {
+                const element = d3.select(this);
+                const words = element.text().split(' ');
+                if (words.length <= 1) return;
+                element.text(null);
+                words.forEach((word, i) => {
+                    element.append('tspan')
+                        .attr('x', 0)
+                        .attr('dy', i === 0 ? '.71em' : '1em')
+                        .text(word);
+                });
+            });
+        }
+
         // configure the y-axis ticks
         const yAxis = d3.axisLeft(vis.yScale)
-            .tickSize(-vis.width) 
+            .tickSize(-vis.width)
             .tickSizeOuter(0);
 
         // format to 5 ticks, applying additional formatting for log
         if (vis.config.yScaleType === 'log') {
-            yAxis.ticks(5, "~s"); 
+            yAxis.ticks(5, "~s");
         } else {
             yAxis.ticks(5);
         }
@@ -262,19 +279,13 @@ class BarChart {
             .selectAll('line')
             .attr('stroke', 'darkgrey');
 
-        // handle orienting the x-axis labels 
+        // handle orienting the x-axis labels
         if (vis.config.xAxisTickRotation === 'vertical') {
             xTicks
                 .style('text-anchor', 'end')
                 .attr('dx', '-.8em')
-                .attr('dy', '-.5em') 
+                .attr('dy', '-.5em')
                 .attr('transform', 'rotate(-90)');
-        } else if (vis.config.xAxisTickRotation === 'angled') {
-            xTicks
-                .style('text-anchor', 'end')
-                .attr('dx', '-.8em')
-                .attr('dy', '.15em')
-                .attr('transform', 'rotate(-45)');
         } // default to horizontal
 
         highlightRequest();

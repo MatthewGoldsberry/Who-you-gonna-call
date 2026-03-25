@@ -68,9 +68,10 @@ const NEIGHBORHOOD_ABBREVIATIONS = {
  * @param {string} xAxisTickRotation - axis rotations to cleanly fit x axis labels
  * @param {string} yScale - type of scaling to apply to y axis (defaults to linear)
  * @param {Object|null} labelMap - optional map of category value → display label for axis ticks
+ * @param {boolean} wrapLabels - if true, splits tick labels on spaces into multiple lines
  * @returns {BarChart} - bar chart instance
  */
-function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation, yScaleType = 'linear', labelMap = null) {
+function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation, yScaleType = 'linear', labelMap = null, wrapLabels = false) {
 
     // create new instance if it doesn't exist
     if (!chartInstance) {
@@ -83,6 +84,7 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
             yScaleType: yScaleType,
             xAxisTickRotation: xAxisTickRotation,
             labelMap: labelMap,
+            wrapLabels: wrapLabels,
         }, data);
     } else {
         // update existing instance
@@ -92,6 +94,7 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
         chartInstance.config.xAxisTickRotation = xAxisTickRotation;
         chartInstance.config.yScaleType = yScaleType;
         chartInstance.config.labelMap = labelMap;
+        chartInstance.config.wrapLabels = wrapLabels;
         chartInstance.data = data;
         chartInstance.updateVis();
         return chartInstance;
