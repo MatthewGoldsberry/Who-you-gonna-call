@@ -164,6 +164,10 @@ class Timeline {
 
                 // highlight all requests in that given week
                 highlightRequests(srNumbersInWeek);
+                if (leafletMap) {
+                    // Timeline hovering for now, need to add brushing later which will mess with this logic
+                    leafletMap.setTransientHeatmapFilter(srNumbersInWeek);
+                }
                 
                 d3.select('#tooltip')
                     .style('opacity', 1)
@@ -181,6 +185,10 @@ class Timeline {
             })
             .on('mouseleave', function() {
                 unhighlightRequest();
+                if (leafletMap) {
+                    // Clear the temporary heatmap filter
+                    leafletMap.setTransientHeatmapFilter(null);
+                }
                 d3.select('#tooltip').style('opacity', 0);
             });
 

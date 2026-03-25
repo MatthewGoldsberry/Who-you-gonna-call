@@ -35,6 +35,8 @@ class LeafletMap {
     this.currentBrushSelection = null; // Stores the current brush coordinate bounds
     this.selectedData = [];
     this.brushingEnabled = false;
+    this.heatmapEnabled = false;
+    this.transientHeatmapFilter = null;
     this.hiddenServiceTypes = new Set();
     this.serviceTypeColors = {
       'DUMPING':   '#e6194b',
@@ -86,7 +88,19 @@ class LeafletMap {
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane)
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
-    // create color scale dynamically for service types
+    // A canvas overlay is used for the heatmap, always present but only visible when toggled on
+    vis.heatmapCanvas = vis.overlay.append('canvas')
+      .attr('class', 'heatmap-canvas')
+      .style('position', 'absolute')
+      .style('top', 0)
+      .style('left', 0)
+      .style('pointer-events', 'none')
+      .style('display', 'none');
+    vis.heatmapCtx = vis.heatmapCanvas.node().getContext('2d');
+    vis.heatmapPalette = vis.createHeatmapPalette();
+    vis.resizeHeatmapCanvas();
+
+        // create color scale dynamically for service types
     vis.colorScaleServiceType = d3.scaleOrdinal()
         .domain(Object.keys(vis.serviceTypeColors))
         .range(Object.values(vis.serviceTypeColors));
@@ -178,7 +192,9 @@ class LeafletMap {
     vis.brushG.style('display', 'none');
 
     vis.theMap.on('resize', () => {
+      vis.resizeHeatmapCanvas();
       vis.refreshBrushExtent();
+      vis.updateHeatmap();
     });
 
     vis.buildLegend();
@@ -195,7 +211,9 @@ class LeafletMap {
     vis.dynamicRadius = currentZoom - 8;
 
     // redraw based on new zoom; need to recalculate on-screen position
+    // In heatmap mode the circles remain in the DOM for shared highlight logic, but are hidden visually for easy switching between modes
     vis.Dots
+      .style('display', vis.heatmapEnabled ? 'none' : null)
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr("fill", d => vis.getColor(d))
@@ -210,6 +228,8 @@ class LeafletMap {
     if (vis.currentBrushSelection) {
       vis.applySelectionFromBounds(vis.currentBrushSelection, true);
     }
+  // update heatmap on update to the map, even if hidden
+    vis.updateHeatmap();
 
     highlightRequest();
   }
@@ -228,6 +248,7 @@ class LeafletMap {
       vis.selectedData = [];
       resetSelection();
       vis.config.onSelectionChange(null);
+      vis.updateHeatmap();
       return;
     }
 
@@ -265,6 +286,149 @@ class LeafletMap {
     if (notify) {
       vis.config.onSelectionChange(vis.selectedData);
     }
+
+    vis.updateHeatmap();
+  }
+
+  // Used to resize the heatmap canvas element to match the leaflet map
+  resizeHeatmapCanvas() {
+    let vis = this;
+    const mapSize = vis.theMap.getSize();
+    vis.heatmapCanvas
+      .attr('width', mapSize.x)
+      .attr('height', mapSize.y)
+      .style('width', `${mapSize.x}px`)
+      .style('height', `${mapSize.y}px`);
+  }
+
+  // Heatmap color stuff
+  createHeatmapPalette() {
+    const paletteCanvas = document.createElement('canvas');
+    paletteCanvas.width = 256;
+    paletteCanvas.height = 1;
+
+    const paletteCtx = paletteCanvas.getContext('2d');
+    const gradient = paletteCtx.createLinearGradient(0, 0, 256, 0);
+    gradient.addColorStop(0.00, '#1e3a8a');
+    gradient.addColorStop(0.25, '#0ea5e9');
+    gradient.addColorStop(0.50, '#22c55e');
+    gradient.addColorStop(0.75, '#facc15');
+    gradient.addColorStop(1.00, '#dc2626');
+    paletteCtx.fillStyle = gradient;
+    paletteCtx.fillRect(0, 0, 256, 1);
+
+    return paletteCtx.getImageData(0, 0, 256, 1).data;
+  }
+
+  clearHeatmap() {
+    let vis = this;
+    vis.heatmapCtx.clearRect(0, 0, vis.theMap.getSize().x, vis.theMap.getSize().y);
+  }
+
+  setHeatmapEnabled(enabled) {
+    // Toggling heatmap mode only changes presentation; the underlying data and brush state are preserved.
+    this.heatmapEnabled = enabled;
+    this.heatmapCanvas.style('display', this.heatmapEnabled ? 'block' : 'none');
+    this.Dots.style('display', this.heatmapEnabled ? 'none' : null);
+
+    if (!this.heatmapEnabled) {
+      this.transientHeatmapFilter = null;
+      this.clearHeatmap();
+    } else {
+      this.updateHeatmap();
+    }
+  }
+
+  toggleHeatmapMode() {
+    this.setHeatmapEnabled(!this.heatmapEnabled);
+    return this.heatmapEnabled;
+  }
+
+  setTransientHeatmapFilter(srNumbers = null) {
+    // Linked hover interactions provide a list of SR_NUMBERs to preview in the heatmap temporarily.
+    this.transientHeatmapFilter = srNumbers && srNumbers.length > 0 ? new Set(srNumbers) : null;
+    this.updateHeatmap();
+  }
+
+  getHeatmapData() {
+    let vis = this;
+    const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
+
+    if (!vis.transientHeatmapFilter) {
+      return baseData;
+    }
+
+    // Get subset of data matching the filter so that the heatmap can reflect the linked interactions from leaflet
+    return baseData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
+  }
+
+  updateHeatmap() {
+    let vis = this;
+
+    if (!vis.heatmapEnabled || !vis.heatmapCtx) {
+      return;
+    }
+
+    vis.resizeHeatmapCanvas();
+    vis.clearHeatmap();
+
+    const heatmapData = vis.getHeatmapData();
+    if (heatmapData.length === 0) {
+      return;
+    }
+
+    const mapSize = vis.theMap.getSize();
+    const radius = Math.max(18, Math.round(vis.dynamicRadius * 7));
+    const cellSize = Math.max(12, Math.round(radius / 2));
+    const bins = new Map();
+
+    heatmapData.forEach(d => {
+      const point = vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]);
+      const cellX = Math.round(point.x / cellSize);
+      const cellY = Math.round(point.y / cellSize);
+      const key = `${cellX}:${cellY}`;
+
+      if (!bins.has(key)) {
+        bins.set(key, { x: point.x, y: point.y, count: 0 });
+      }
+
+      bins.get(key).count += 1;
+    });
+
+    const aggregatedPoints = Array.from(bins.values());
+    const maxCount = d3.max(aggregatedPoints, d => d.count) || 1;
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = mapSize.x;
+    offscreenCanvas.height = mapSize.y;
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+
+    // First paint grayscale intensity blobs to an offscreen canvas
+    aggregatedPoints.forEach(d => {
+      const intensity = d.count / maxCount;
+      const gradient = offscreenCtx.createRadialGradient(d.x, d.y, 0, d.x, d.y, radius);
+      gradient.addColorStop(0, `rgba(0, 0, 0, ${Math.min(0.95, 0.30 + intensity * 0.65)})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      offscreenCtx.fillStyle = gradient;
+      offscreenCtx.fillRect(d.x - radius, d.y - radius, radius * 2, radius * 2);
+    });
+
+    const image = offscreenCtx.getImageData(0, 0, mapSize.x, mapSize.y);
+
+    // Use palette to draw colors on the heatmap
+    for (let i = 0; i < image.data.length; i += 4) {
+      const alpha = image.data[i + 3];
+      if (alpha === 0) {
+        continue;
+      }
+
+      const paletteIndex = alpha * 4;
+      image.data[i] = vis.heatmapPalette[paletteIndex];
+      image.data[i + 1] = vis.heatmapPalette[paletteIndex + 1];
+      image.data[i + 2] = vis.heatmapPalette[paletteIndex + 2];
+      image.data[i + 3] = Math.min(230, alpha);
+    }
+
+    vis.heatmapCtx.putImageData(image, 0, 0);
   }
 
   /**
@@ -317,6 +481,7 @@ class LeafletMap {
       vis.brushG.call(vis.brush.move, null);
       resetSelection();
       vis.config.onSelectionChange(null);
+      vis.updateHeatmap();
     }
   }
 
