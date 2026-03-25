@@ -354,12 +354,17 @@ class LeafletMap {
     let vis = this;
     const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
 
+    // exclude any service types hidden via the legend checkboxes
+    const visibleData = vis.hiddenServiceTypes.size > 0
+      ? baseData.filter(d => !vis.hiddenServiceTypes.has(d.SR_TYPE))
+      : baseData;
+
     if (!vis.transientHeatmapFilter) {
-      return baseData;
+      return visibleData;
     }
 
     // Get subset of data matching the filter so that the heatmap can reflect the linked interactions from leaflet
-    return baseData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
+    return visibleData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
   }
 
   updateHeatmap() {
