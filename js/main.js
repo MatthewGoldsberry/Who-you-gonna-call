@@ -9,6 +9,8 @@ let serviceTypeDistribution;
 let selectedRequests = [];
 
 let fullData = [];
+let brushSelectedData = null;
+let hiddenServiceTypes = new Set();
 
 d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv')
 .then(data => {
@@ -33,7 +35,11 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
 
     // Function to re-render all dashboard visualizations with either filtered or full data
     function renderDashboard(filteredData = null) {
-        const activeData = filteredData === null ? fullData : filteredData;
+        brushSelectedData = filteredData;
+        let activeData = filteredData === null ? fullData : filteredData;
+        if (hiddenServiceTypes.size > 0) {
+            activeData = activeData.filter(d => !hiddenServiceTypes.has(d.SR_TYPE));
+        }
 
         // Update timeline with the active dataset
         timeline.data = activeData;
@@ -51,11 +57,11 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
     leafletMap = new LeafletMap({
         parentElement: '#my-map',
         onSelectionChange: selectedData => {
-            if (selectedData === null) {
-                renderDashboard(null);
-            } else {
-                renderDashboard(selectedData);
-            }
+            renderDashboard(selectedData);
+        },
+        onFilterChange: hidden => {
+            hiddenServiceTypes = hidden;
+            renderDashboard(brushSelectedData);
         }
     }, validData);
     leafletMap.updateVis();

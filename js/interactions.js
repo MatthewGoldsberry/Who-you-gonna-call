@@ -5,11 +5,15 @@
 // Handle Color Selection
 d3.select('#colorBy').on('change', function() {
     const selectedValue = d3.select(this).property('value');
-    
+
     if (leafletMap) {
         leafletMap.colorBy = selectedValue;
         leafletMap.updateVis();
     }
+
+    // disable color editor if not on service types
+    const isServiceType = selectedValue === 'serviceType';
+    d3.selectAll('.legend-color-picker').classed('disabled', !isServiceType);
 });
 
 // Handle Background Selection
