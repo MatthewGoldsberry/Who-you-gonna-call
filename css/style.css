@@ -207,6 +207,18 @@ body {
   user-select: none;
 }
 
+.legend-info-icon {
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: default;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.legend-info-icon:hover {
+  color: #6b7280;
+}
+
 .legend-row.hidden .legend-label {
   color: #9ca3af;
   text-decoration: line-through;
