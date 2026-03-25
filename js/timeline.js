@@ -77,7 +77,7 @@ class Timeline {
         vis.svg.append('path')
             .attr('class', 'line')
             .attr('fill', 'none')
-            .attr('stroke', '#2a6dff') // this is the same color as the header block. 
+            .attr('stroke', 'steelblue') // this is the same color as the header block. 
             // I picked it for consistency but it might be too bright for the line, we can think about this later
             .attr('stroke-width', 1.5);
         }
@@ -153,9 +153,11 @@ class Timeline {
             .join('circle')
             .attr('class', 'timeline-point')
             .attr('r', 4)
-            .attr('fill', '#2a6dff')
+            .attr('fill', 'steelblue')
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
+            .attr('stroke', 'black')
+            .attr('stroke-width', 0.5)
             .on('mouseover', function(event, d) {
                 const weekStart = d.date;
 
