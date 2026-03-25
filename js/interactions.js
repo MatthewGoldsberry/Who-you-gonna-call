@@ -191,3 +191,16 @@ d3.select('#brushToggle').on('click', function() {
         }
     }
 });
+
+// Handle Heatmap Button Toggle
+d3.select('#heatmapToggle').on('click', function() {
+    if (leafletMap) {
+        // Heatmap mode swaps the map from point symbols to density rendering without changing selection state.
+        const enabled = leafletMap.toggleHeatmapMode();
+        if (enabled) {
+            d3.select(this).classed('active', true).text('Heatmap: On');
+        } else {
+            d3.select(this).classed('active', false).text('Heatmap: Off');
+        }
+    }
+});

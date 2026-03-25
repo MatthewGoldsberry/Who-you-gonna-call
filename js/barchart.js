@@ -186,6 +186,10 @@ class BarChart {
                 const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
 
                 highlightRequests(srNumbersInBin);
+                if (leafletMap) {
+                    // Bar hover previews the matching records in the heatmap
+                    leafletMap.setTransientHeatmapFilter(srNumbersInBin);
+                }
                 // tooltip creation
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
@@ -216,6 +220,10 @@ class BarChart {
             })
             .on('mouseout', () => {
                 unhighlightRequest();
+                if (leafletMap) {
+                    // Clear the transient filter to match the heatmap to the leaflet map state
+                    leafletMap.setTransientHeatmapFilter(null);
+                }
                 // remove tooltip
                 d3.select('#tooltip').style('opacity', 0);
             })
