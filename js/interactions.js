@@ -5,11 +5,15 @@
 // Handle Color Selection
 d3.select('#colorBy').on('change', function() {
     const selectedValue = d3.select(this).property('value');
-    
+
     if (leafletMap) {
         leafletMap.colorBy = selectedValue;
         leafletMap.updateVis();
     }
+
+    // disable color editor if not on service types
+    const isServiceType = selectedValue === 'serviceType';
+    d3.selectAll('.legend-color-picker').classed('disabled', !isServiceType);
 });
 
 // Handle Background Selection
@@ -74,7 +78,7 @@ function highlightRequests(hoveredSRs = []) {
 
     // update bar charts to highlight categories containing the focused Service Requests
     d3.selectAll('svg.chart-container').classed('has-focus', true);
-    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution].filter(Boolean).forEach(vis => {
+    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution, serviceTypeDistribution].filter(Boolean).forEach(vis => {
         // find all unique categories
         const matchingCategories = new Set();
         SRsToFocus.forEach(sr => {

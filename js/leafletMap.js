@@ -26,16 +26,26 @@ class LeafletMap {
   constructor(_config, _data) {
     this.config = {
       parentElement: _config.parentElement,
-      onSelectionChange: _config.onSelectionChange || (() => {})
+      onSelectionChange: _config.onSelectionChange || (() => {}),
+      onFilterChange: _config.onFilterChange || (() => {})
     }
     this.data = _data;
-    this.colorBy = 'neighborhood';
+    this.colorBy = 'serviceType';
     this.mapBackground = 'street';
     this.currentBrushSelection = null; // Stores the current brush coordinate bounds
     this.selectedData = [];
     this.brushingEnabled = false;
     this.heatmapEnabled = false;
     this.transientHeatmapFilter = null;
+    this.hiddenServiceTypes = new Set();
+    this.serviceTypeColors = {
+      'DUMPING':   '#e6194b',
+      'GRAFFITI':  '#3cb44b',
+      'LITTERING': '#f58231',
+      'TIRES':     '#ffe119',
+      'TRASH':     '#42d4f4',
+      'VACANT':    '#911eb4'
+    };
     this.initVis();
   }
 
@@ -90,7 +100,13 @@ class LeafletMap {
     vis.heatmapPalette = vis.createHeatmapPalette();
     vis.resizeHeatmapCanvas();
 
-    // TODO some color theory work needs to be done here
+        // create color scale dynamically for service types
+    vis.colorScaleServiceType = d3.scaleOrdinal()
+        .domain(Object.keys(vis.serviceTypeColors))
+        .range(Object.values(vis.serviceTypeColors));
+
+    // create color scale for agencies
+    vis.colorScaleAgency = d3.scaleOrdinal(['#e6194b', '#42d4f4', '#4363d8', '#f58231', '#911eb4', '#3cb44b', '#ffe119']);
 
     // create color scale for the priority of request
     vis.colorScalePriority = d3.scaleOrdinal()
@@ -103,8 +119,7 @@ class LeafletMap {
       '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#aaffc3', '#808000', '#ffd8b1'
     ];
 
-    // create the categorical scales for departments and neighborhoods
-    vis.colorScaleAgency = d3.scaleOrdinal(distinctColors);
+    // create the categorical scales neighborhoods
     vis.colorScaleNeighborhood = d3.scaleOrdinal(distinctColors);
 
     // preprocess the times and create a color scale for time to update
@@ -181,6 +196,8 @@ class LeafletMap {
       vis.refreshBrushExtent();
       vis.updateHeatmap();
     });
+
+    vis.buildLegend();
   }
 
   /**
@@ -204,7 +221,8 @@ class LeafletMap {
       .attr("r", (d, i, nodes) => {
           const isFocused = d3.select(nodes[i]).classed('focused');
           return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
-      });
+      })
+      .attr("display", d => vis.hiddenServiceTypes.has(d.SR_TYPE) ? 'none' : null);
 
 
     if (vis.currentBrushSelection) {
@@ -336,12 +354,17 @@ class LeafletMap {
     let vis = this;
     const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
 
+    // exclude any service types hidden via the legend checkboxes
+    const visibleData = vis.hiddenServiceTypes.size > 0
+      ? baseData.filter(d => !vis.hiddenServiceTypes.has(d.SR_TYPE))
+      : baseData;
+
     if (!vis.transientHeatmapFilter) {
-      return baseData;
+      return visibleData;
     }
 
     // Get subset of data matching the filter so that the heatmap can reflect the linked interactions from leaflet
-    return baseData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
+    return visibleData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
   }
 
   updateHeatmap() {
@@ -477,12 +500,118 @@ class LeafletMap {
   }
 
   /**
+   * Builds the floating service type legend panel with color pickers and visibility checkboxes.
+   */
+  buildLegend() {
+    let vis = this;
+
+    // get the list of service types from the color map
+    const types = Object.keys(vis.serviceTypeColors);
+
+    // create mapping between SR_TYPE and SR_TYPE_DESC to be added to the info buttons by service types
+    const subtypeMap = new Map();
+    types.forEach(type => subtypeMap.set(type, new Set()));
+    vis.data.forEach(d => {
+      if (subtypeMap.has(d.SR_TYPE) && d.SR_TYPE_DESC) {
+        subtypeMap.get(d.SR_TYPE).add(d.SR_TYPE_DESC);
+      }
+    });
+
+    // select the legend container and clear any previously rendered content
+    const panel = d3.select('#service-type-legend');
+    panel.html('');
+    panel.append('div').attr('class', 'legend-title').text('Service Types');
+
+    // create one row in the panel for each service type
+    types.forEach(type => {
+
+      // label each row with a consistent id for the checkbox handler to be able to find
+      const row = panel.append('div')
+        .attr('class', 'legend-row')
+        .attr('id', `legend-row-${type}`);
+
+      // color picker UI 
+      row.append('input')
+        .attr('type', 'color')
+        .attr('class', 'legend-color-picker')
+        .property('value', vis.serviceTypeColors[type])
+        .on('change', function () { 
+          // wait until user has submitted color change, updates are not done actively for performance reasons
+
+          // persist the new hex value back into serviceTypeColors to keep it in sync
+          vis.serviceTypeColors[type] = this.value;
+
+          // rebuild scale's range from serviceTypeColors 
+          vis.colorScaleServiceType.range(
+            Object.keys(vis.serviceTypeColors).map(t => vis.serviceTypeColors[t])
+          );
+
+          // rerender dots
+          vis.updateVis();
+        });
+
+      // visibility checkbox
+      row.append('input')
+        .attr('type', 'checkbox')
+        .attr('class', 'legend-checkbox')
+        .property('checked', true)
+        .on('change', function () {
+          // remove type from hidden types if checkbox checked, else add it to hidden types
+          if (this.checked) {
+            vis.hiddenServiceTypes.delete(type);
+          } else {
+            vis.hiddenServiceTypes.add(type);
+          }
+
+          // strikethrough the service type name in the legend if the checkbox is not selected
+          d3.select(`#legend-row-${type}`).classed('hidden', !this.checked);
+
+          // rerender dots
+          vis.updateVis();
+
+          // send message to main.js to update data passed to all visualizations based on hidden types
+          vis.config.onFilterChange(vis.hiddenServiceTypes);
+        });
+
+      row.append('span').attr('class', 'legend-label').text(type);
+
+      // basic info icon html -- generated by Gemini
+      const infoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`;
+
+      // add an info icon about the data 
+      const subtypes = [...subtypeMap.get(type)].sort();
+      row.append('span')
+        .attr('class', 'legend-info-icon')
+        .html(infoSvg)
+        .on('mouseover', function() {
+          d3.select('#tooltip')
+            .style('opacity', 1)
+            .html(`
+              <div class="tooltip-content">
+                <strong>${type} includes:</strong><br>
+                ${subtypes.map(s => `&bull; ${s}`).join('<br>')}
+              </div>
+            `);
+        })
+        .on('mousemove', function(event) {
+          d3.select('#tooltip')
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY + 10) + 'px');
+        })
+        .on('mouseout', function() {
+          d3.select('#tooltip').style('opacity', 0);
+        });
+    });
+  }
+
+  /**
    * determines the appropriate fill color for a given data point based on the current color by state
    * @param {Object} d 
    * @returns hex color code or valid CSS color string
    */
   getColor(d) {
     let vis = this;
+    if (vis.colorBy === 'serviceType') return vis.colorScaleServiceType(d.SR_TYPE);
     if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
     if (vis.colorBy === 'neighborhood') return vis.colorScaleNeighborhood(d.NEIGHBORHOOD);
     if (vis.colorBy === 'priority') return vis.colorScalePriority(d.PRIORITY);

@@ -36,10 +36,25 @@ body {
   border-bottom: 1px solid lightgrey;
 }
 
+.header-title-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
 .dashboard-header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
+  line-height: 1.1;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  font-weight: 400;
+  color: #bfdbfe;
+  letter-spacing: 0.02em;
 }
 
 .dashboard-header p {
@@ -93,21 +108,21 @@ body {
 
 .dropdown-label {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: black;
-  padding: 6px 4px 6px 10px;
+  padding: 5px 4px 5px 10px;
   white-space: nowrap;
 }
 
 .dropdown-select {
   flex: 1;
-  border: none; 
+  border: none;
   background-color: transparent;
-  padding: 6px 10px 6px 2px;
+  padding: 5px 10px 5px 2px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  color: darkslategray; 
+  font-size: 12px;
+  color: darkslategray;
   cursor: pointer;
   outline: none;
 }
@@ -118,9 +133,9 @@ body {
   background-color: rgba(255, 255, 255, 0.95);
   color: #1f2937;
   border-radius: 4px;
-  padding: 7px 10px;
+  padding: 5px 10px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
@@ -138,6 +153,81 @@ body {
   background-color: #2a6dff;
   border-color: #2a6dff;
   color: white;
+}
+
+/* --- Floating Service Type Legend --- */
+
+#service-type-legend {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid lightgrey;
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  padding: 6px 8px; 
+}
+
+.legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: black;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid lightgrey;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.legend-color-picker {
+  width: 16px; 
+  height: 20px;
+  border-radius: 3px;
+  padding: 0; 
+  cursor: pointer;
+  flex-shrink: 0;
+  background: none;
+}
+
+.legend-checkbox {
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+}
+
+.legend-label {
+  font-size: 12px;
+  color: #1f2937;
+  user-select: none;
+}
+
+.legend-info-icon {
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: default;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.legend-info-icon:hover {
+  color: #6b7280;
+}
+
+.legend-row.hidden .legend-label {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.legend-color-picker.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  cursor: default;
 }
 
 /* --- Floating Bottom-Left Note --- */

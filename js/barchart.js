@@ -194,11 +194,9 @@ class BarChart {
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
 
-                // defined everything but left position 
                 tooltip
                     .style('opacity', 1)
                     .style('display', 'block')
-                    .style('top', (event.pageY + vis.config.tooltipPadding) + 'px') // can style top because y bounds will never go out of page view
                     .html(`
                         <div class="tooltip-content">
                             <strong>${vis.config.category}:</strong> ${d.category}<br>
@@ -207,16 +205,23 @@ class BarChart {
                     `);
 
                 // get the dimensions of the generated tooltip box
-                const tooltipWidth = tooltip.node().getBoundingClientRect().width;
+                const tooltipRect = tooltip.node().getBoundingClientRect();
 
-                // calculate horizontal position, updating if the box is going to be outside of page
-                let xPosition = event.pageX; // Note to self: have to store outside of conditional for position update to work 
-                if ((xPosition + tooltipWidth + vis.config.tooltipPadding) > window.innerWidth) {
-                    xPosition = event.pageX - tooltipWidth;
+                // calculate horizontal position, updating if the box is going to be outside the right edge
+                let xPosition = event.pageX;
+                if ((xPosition + tooltipRect.width + vis.config.tooltipPadding) > window.innerWidth) {
+                    xPosition = event.pageX - tooltipRect.width;
                 }
 
-                // set the x position of the tooltip
-                tooltip.style('left', xPosition + 'px')
+                // calculate vertical position, updating if the box is going to be outside the bottom edge
+                let yPosition = event.pageY + vis.config.tooltipPadding;
+                if ((yPosition + tooltipRect.height) > (window.scrollY + window.innerHeight)) {
+                    yPosition = event.pageY - tooltipRect.height - vis.config.tooltipPadding;
+                }
+
+                tooltip
+                    .style('left', xPosition + 'px')
+                    .style('top', yPosition + 'px')
             })
             .on('mouseout', () => {
                 unhighlightRequest();
