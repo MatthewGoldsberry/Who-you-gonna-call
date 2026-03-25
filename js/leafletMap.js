@@ -80,7 +80,7 @@ class LeafletMap {
 
     vis.colorScaleServiceType = d3.scaleOrdinal()
         .domain(['DUMPING', 'GRAFFITI', 'LITTERING', 'TIRES', 'TRASH', 'VACANT'])
-        .range(['#41afaa', '#466eb4', '#00a0e1', '#e6a532', '#d7642c', '#af4b91']);
+        .range(['#e6194b', '#3cb44b', '#f58231', '#ffe119', '#42d4f4', '#911eb4']);
 
     // create color scale for the priority of request
     vis.colorScalePriority = d3.scaleOrdinal()
