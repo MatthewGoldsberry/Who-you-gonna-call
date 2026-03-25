@@ -23,7 +23,7 @@ class BarChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth || 800,
             containerHeight: _config.containerHeight || 300,
-            margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 70 },
+            margin: _config.margin || { top: 50, right: 20, bottom: _config.xAxisTickRotation === 'vertical' ? 72 : 50, left: 70 },
             tooltipPadding: _config.tooltipPadding || 15,
             attributeKey: _config.attributeKey,
             category: _config.category,
@@ -31,6 +31,8 @@ class BarChart {
             yAxisLabel: _config.yAxisLabel,
             yScaleType: _config.yScaleType || 'linear',
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
+            labelMap: _config.labelMap || null,
+            wrapLabels: _config.wrapLabels || false,
         }
         this.data = _data;
         this.initVis();
@@ -233,23 +235,40 @@ class BarChart {
                 d3.select('#tooltip').style('opacity', 0);
             })
 
-        // update axis labels and ticks
+        // update axis labels and ticks; apply abbreviated labels if a labelMap was provided
         vis.xAxis = d3.axisBottom(vis.xScale)
-            .tickSizeOuter(0);
+            .tickSizeOuter(0)
+            .tickFormat(d => vis.config.labelMap?.[d] ?? d);
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
         const xTicks = vis.xAxisG.selectAll('.tick text')
             .style('font-size', '0.85rem');
 
+        // if wrapLabels, split each tick label at its spaces and put each word into a separate line
+        if (vis.config.wrapLabels) {
+            xTicks.each(function() {
+                const element = d3.select(this);
+                const words = element.text().split(' ');
+                if (words.length <= 1) return;
+                element.text(null);
+                words.forEach((word, i) => {
+                    element.append('tspan')
+                        .attr('x', 0)
+                        .attr('dy', i === 0 ? '.71em' : '1em')
+                        .text(word);
+                });
+            });
+        }
+
         // configure the y-axis ticks
         const yAxis = d3.axisLeft(vis.yScale)
-            .tickSize(-vis.width) 
+            .tickSize(-vis.width)
             .tickSizeOuter(0);
 
         // format to 5 ticks, applying additional formatting for log
         if (vis.config.yScaleType === 'log') {
-            yAxis.ticks(5, "~s"); 
+            yAxis.ticks(5, "~s");
         } else {
             yAxis.ticks(5);
         }
@@ -260,19 +279,13 @@ class BarChart {
             .selectAll('line')
             .attr('stroke', 'darkgrey');
 
-        // handle orienting the x-axis labels 
+        // handle orienting the x-axis labels
         if (vis.config.xAxisTickRotation === 'vertical') {
             xTicks
                 .style('text-anchor', 'end')
                 .attr('dx', '-.8em')
-                .attr('dy', '-.5em') 
+                .attr('dy', '-.5em')
                 .attr('transform', 'rotate(-90)');
-        } else if (vis.config.xAxisTickRotation === 'angled') {
-            xTicks
-                .style('text-anchor', 'end')
-                .attr('dx', '-.8em')
-                .attr('dy', '.15em')
-                .attr('transform', 'rotate(-45)');
         } // default to horizontal
 
         highlightRequest();

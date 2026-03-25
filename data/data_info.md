@@ -22,9 +22,15 @@
 
 ## Data Manipulation
 
+### Service Type Combinations
+
 For the purpose of effectively showing the different visual urban disorders when creating a the subset dataset a couple of sub-service types are combined into one. These are listed below:
 
 * `GRAFFITI`: contains `GRFITI`, `GRFITI-H`, `GRAFPARK`, and `GRFTRPRV`
 * `DUMPING`: renames `DUMP-PVS`
 * `LITTERING`: contains `LTTR-BLD`, `LTTR-CDV`, `LTTR-PRK`, `LTTR-REC`, and `LTTRRST`
 * `TRASH`: contains `TRASH-E`, `TRASH-I`, `TRASH-L`, and `TRASH-RE`
+
+### Removal of Unspecified Neighboorhoods
+
+All rows that did not have a value for neighborhood where removed. In most of these were outside the city of Cincinnati and only a select couple where within the bounds of the city.

@@ -3,8 +3,8 @@
 import pandas as pd  # ty:ignore[unresolved-import]
 from pathlib import Path
 
-BASE_DATA = Path("Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv")
-SUBSET_PATH = Path("Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv")
+BASE_DATA = Path("data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv")
+SUBSET_PATH = Path("data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv")
 
 # graffiti — public property, highway/ROW, parks, private property
 GRAFFITI = ["GRFITI", "GRFITI-H", "GRAFPARK", "GRFTRPRV"]
@@ -35,5 +35,8 @@ subset_df.loc[subset_df["SR_TYPE"].isin(GRAFFITI), "SR_TYPE"] = "GRAFFITI"
 subset_df.loc[subset_df["SR_TYPE"].isin(DUMPING), "SR_TYPE"] = "DUMPING"
 subset_df.loc[subset_df["SR_TYPE"].isin(LITTERING), "SR_TYPE"] = "LITTERING"
 subset_df.loc[subset_df["SR_TYPE"].isin(TRASH), "SR_TYPE"] = "TRASH"
+
+# drop rows with no neighborhood
+subset_df = subset_df[subset_df["NEIGHBORHOOD"].notna() & (subset_df["NEIGHBORHOOD"].str.strip() != "")]
 
 subset_df.to_csv(SUBSET_PATH, index=False)
