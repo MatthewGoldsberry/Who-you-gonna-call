@@ -50,7 +50,7 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
         requestMethods = updateBarChart(activeData, 'METHOD_RECEIVED', requestMethods, '#request-methods', 'Submission Method', 'Request Submission Methods', 'Requests', 'horizontal', 'log');
         serviceDeptDistribution = updateBarChart(activeData, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Requests', 'angled', 'sqrt');
         priorityDistribution = updateBarChart(activeData, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Requests', 'horizontal', 'sqrt');
-        serviceTypeDistribution = updateBarChart(validData, 'SR_TYPE', serviceTypeDistribution, '#service-type-distribution', 'Service Type', 'Requests by Service Type', 'Requests', 'horizontal', 'linear');
+        serviceTypeDistribution = updateBarChart(activeData, 'SR_TYPE', serviceTypeDistribution, '#service-type-distribution', 'Service Type', 'Requests by Service Type', 'Requests', 'horizontal', 'linear');
     }
 
     // initialize chart and then show it
