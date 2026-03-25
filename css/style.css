@@ -108,21 +108,21 @@ body {
 
 .dropdown-label {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: black;
-  padding: 6px 4px 6px 10px;
+  padding: 5px 4px 5px 10px;
   white-space: nowrap;
 }
 
 .dropdown-select {
   flex: 1;
-  border: none; 
+  border: none;
   background-color: transparent;
-  padding: 6px 10px 6px 2px;
+  padding: 5px 10px 5px 2px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  color: darkslategray; 
+  font-size: 12px;
+  color: darkslategray;
   cursor: pointer;
   outline: none;
 }
@@ -133,9 +133,9 @@ body {
   background-color: rgba(255, 255, 255, 0.95);
   color: #1f2937;
   border-radius: 4px;
-  padding: 7px 10px;
+  padding: 5px 10px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
