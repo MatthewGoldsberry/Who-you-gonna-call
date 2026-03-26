@@ -106,9 +106,12 @@ function highlightRequests(hoveredSRs = []) {
             if (week !== undefined) matchingWeeks.add(week);
         });
 
-        // activate .focused class based on found matching weeks 
+        // activate .focused class based on found matching weeks
         timeline.svg.selectAll('.timeline-point').classed('focused', d => matchingWeeks.has(+d.date));
     }
+
+    // show the 'Clear Selection' button only when there is an active selection
+    document.getElementById('resetSelectionBtn').style.display = selectedRequests.length > 0 ? '' : 'none';
 }
 
 /**
@@ -173,11 +176,12 @@ function handleSelection(srNumber) {
 }
 
 /**
- * Resets the selection and updates it visually 
+ * Resets the selection and updates it visually
  */
 function resetSelection() {
     selectedRequests = [];
     unhighlightRequest();
+    document.getElementById('resetSelectionBtn').style.display = 'none';
 }
 
 /**
@@ -187,6 +191,13 @@ window.addEventListener('keydown', (event) => {
     if (event.key === 'Escape') {
         resetSelection();
     }
+});
+
+/**
+ * Handler for the 'Clear Selection' button that triggers a reset of the select requests
+ */
+document.getElementById('resetSelectionBtn').addEventListener('click', () => {
+    resetSelection();
 });
 
 // --- Chart / Map Swap ---
