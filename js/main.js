@@ -76,5 +76,8 @@ d3.csv('data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227_subset.csv
     serviceDeptDistribution = updateBarChart(validData, 'DEPT_NAME', serviceDeptDistribution, '#service-dept-distribution', 'Public Agency', 'Service Requests by Public Agency', 'Requests', 'horizontal', 'log', null, true, d => leafletMap.colorScaleAgency(d), 'agency');
     priorityDistribution = updateBarChart(validData, 'PRIORITY', priorityDistribution, '#priority-distribution', 'Priority Level', 'Requests by Priority Level', 'Requests', 'horizontal', 'sqrt', null, false, d => leafletMap.colorScalePriority(d), 'priority');
     serviceTypeDistribution = updateBarChart(validData, 'SR_TYPE', serviceTypeDistribution, '#service-type-distribution', 'Service Type', 'Requests by Service Type', 'Requests', 'horizontal', 'sqrt', null, false, d => leafletMap.colorScaleServiceType(d), 'serviceType');
+
+    // add the view swapping buttons
+    injectSwapButtons();
   })
   .catch(error => console.error(error));
