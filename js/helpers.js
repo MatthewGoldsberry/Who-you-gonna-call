@@ -96,7 +96,6 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
         chartInstance.config.title = title;
         chartInstance.config.yAxisLabel = yAxisLabel;
         chartInstance.config.xAxisTickRotation = xAxisTickRotation;
-        chartInstance.config.yScaleType = yScaleType;
         chartInstance.config.labelMap = labelMap;
         chartInstance.config.wrapLabels = wrapLabels;
         chartInstance.config.colorScale = colorScale;

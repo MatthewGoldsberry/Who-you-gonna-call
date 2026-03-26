@@ -297,13 +297,19 @@ body {
   display: none;
 }
 
-/* --- Swap Button --- */
+/* --- Chart Top-Left Controls (swap button + scale selector) --- */
 
-.swap-button {
+.chart-controls {
   position: absolute;
   top: 3px;
   left: 3px;
   z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.swap-button {
   background: rgba(255, 255, 255, 0.9);
   border: 1px solid lightgrey;
   border-radius: 3px;
@@ -326,6 +332,35 @@ body {
   border-color: darkgrey;
 }
 
+#map-swap-btn {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1000;
+}
+
+.scale-selector {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 1px 2px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  color: darkslategray;
+  outline: none;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+}
+
+.scale-selector:hover {
+  background: white;
+  border-color: darkgrey;
+}
+
 .chart-wrapper.in-main .swap-button {
   padding: 4px 6px;
   border-radius: 5px;
@@ -334,6 +369,12 @@ body {
 .chart-wrapper.in-main .swap-button svg {
   width: 20px;
   height: 16px;
+}
+
+.chart-wrapper.in-main .scale-selector {
+  font-size: 13px;
+  padding: 3px 4px;
+  right: 5px;
 }
 
 /* --- Bar Chart Configurations --- */

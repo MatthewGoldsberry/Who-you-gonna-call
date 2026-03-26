@@ -105,6 +105,33 @@ class BarChart {
             .attr('x', 0 - (vis.height / 2))
             .style('text-anchor', 'middle')
             .text(vis.config.yAxisLabel);
+    
+        // scale selector dropdown
+        // inject into chart-wrapper so this dropdown will travel with the swap
+        const wrapper = vis.svg.node().parentElement;
+        const controls = document.createElement('div');
+        controls.className = 'chart-controls';
+
+        // create dropdown element with a change event handler
+        const scaleSelect = document.createElement('select');
+        scaleSelect.className = 'scale-selector';
+        scaleSelect.title = 'Y-axis scale type';
+        ['linear', 'log', 'sqrt'].forEach((scale) => {
+            const opt = document.createElement('option');
+            opt.value = scale;
+            opt.textContent = scale;
+            if (scale === vis.config.yScaleType) opt.selected = true;
+            scaleSelect.appendChild(opt);
+        });
+        scaleSelect.addEventListener('change', e => {
+            // on change read in the new value and update the bar chart
+            vis.config.yScaleType = e.target.value;
+            vis.updateVis();
+        });
+
+        // append the swap button container and scale selector to the wrapper
+        wrapper.appendChild(controls);
+        wrapper.appendChild(scaleSelect);
 
         // render initial visualization
         vis.updateVis();
