@@ -250,8 +250,7 @@ class BarChart {
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
-        const xTicks = vis.xAxisG.selectAll('.tick text')
-            .style('font-size', '0.85rem');
+        const xTicks = vis.xAxisG.selectAll('.tick text');
 
         // if wrapLabels, split each tick label at its spaces and put each word into a separate line
         if (vis.config.wrapLabels) {

@@ -267,6 +267,19 @@ body {
   border-bottom: none;
 }
 
+/* --- Bar Chart Configurations --- */
+.chart-title {
+  font-size: 24px;
+}
+
+.axis-title {
+  font-size: 18px;
+}
+
+.axis .tick text {
+  font-size: 14px;
+}
+
 /* --- Timeline Area --- */
 
 .timeline-zone {
