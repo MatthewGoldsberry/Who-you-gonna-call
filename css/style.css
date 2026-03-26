@@ -418,6 +418,11 @@ body {
   border-right: 1px solid lightgrey;
 }
 
+.timeline-container {
+  height: 100%;
+  width: 100%;
+}
+
 .axis-label {
   font-size: 12px;
   fill: #333;
