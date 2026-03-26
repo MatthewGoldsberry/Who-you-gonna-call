@@ -99,7 +99,7 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
         chartInstance.config.yScaleType = yScaleType;
         chartInstance.config.labelMap = labelMap;
         chartInstance.config.wrapLabels = wrapLabels;
-        chartInstance.config.colorFn = colorFn;
+        chartInstance.config.colorScale = colorScale;
         chartInstance.config.colorByKey = colorByKey;
         chartInstance.data = data;
         chartInstance.updateVis();
