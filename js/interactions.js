@@ -176,12 +176,19 @@ function handleSelection(srNumber) {
 }
 
 /**
- * Resets the selection and updates it visually
+ * Resets the selection and updates it visually and clears the brush box if one is active.
  */
 function resetSelection() {
     selectedRequests = [];
     unhighlightRequest();
     document.getElementById('resetSelectionBtn').style.display = 'none';
+
+    // clear brush box if one is drawn
+    if (leafletMap && leafletMap.currentBrushSelection) {
+        leafletMap.currentBrushSelection = null;
+        leafletMap.selectedData = [];
+        leafletMap.brushG.call(leafletMap.brush.move, null);
+    }
 }
 
 /**
