@@ -11,6 +11,11 @@ d3.select('#colorBy').on('change', function() {
         leafletMap.updateVis();
     }
 
+    // rerender bar charts so only the matching one becomes colored
+    [requestsPerNeighborhood, requestMethods, serviceDeptDistribution, priorityDistribution, serviceTypeDistribution]
+        .filter(Boolean)
+        .forEach(chart => chart.renderVis());
+
     // disable color editor if not on service types
     const isServiceType = selectedValue === 'serviceType';
     d3.selectAll('.legend-color-picker').classed('disabled', !isServiceType);
