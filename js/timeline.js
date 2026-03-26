@@ -190,6 +190,11 @@ class Timeline {
                     leafletMap.setTransientHeatmapFilter(null);
                 }
                 d3.select('#tooltip').style('opacity', 0);
+            })
+            .on('click', (event, d) => {
+                // persist selection of service requests in the given week bin
+                const srNumbersInWeek = vis.weekToSRsMap.get(+d.date) || [];
+                handleSelections(srNumbersInWeek);
             });
 
         highlightRequest();

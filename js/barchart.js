@@ -242,6 +242,11 @@ class BarChart {
                 // remove tooltip
                 d3.select('#tooltip').style('opacity', 0);
             })
+            .on('click', (event, d) => {
+                // persist selection of service requests in the given bin
+                const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
+                handleSelections(srNumbersInBin);
+            })
 
         // update axis labels and ticks; apply abbreviated labels if a labelMap was provided
         vis.xAxis = d3.axisBottom(vis.xScale)
