@@ -40,7 +40,7 @@ class Timeline {
             .attr('viewBox', `0 0 ${vis.config.containerWidth} ${vis.config.containerHeight}`)
             .attr('preserveAspectRatio', 'none');
 
-        vis.svg.append('g')
+        vis.chart = vis.svg.append('g')
             .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
 
         vis.xScale = d3.scaleTime()
@@ -52,21 +52,21 @@ class Timeline {
         vis.xAxis = d3.axisBottom(vis.xScale);
         vis.yAxis = d3.axisLeft(vis.yScale);
 
-        vis.svg.append('g')
+        vis.chart.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0, ${vis.height})`);
-        vis.svg.append('g')
+        vis.chart.append('g')
             .attr('class', 'y-axis');
 
         // Axis labels
-        vis.svg.append('text')
+        vis.chart.append('text')
             .attr('class', 'axis-label')
             .attr('text-anchor', 'middle')
             .attr('x', vis.width / 2)
             .attr('y', vis.height + vis.config.margin.bottom - 18)
             .text('Week');
 
-        vis.svg.append('text')
+        vis.chart.append('text')
             .attr('class', 'axis-label')
             .attr('text-anchor', 'middle')
             .attr('transform', `translate(${-vis.config.margin.left + 15}, ${vis.height / 2}) rotate(-90)`)
@@ -77,10 +77,10 @@ class Timeline {
             .x(d => vis.xScale(d.date))
             .y(d => vis.yScale(d.count));
 
-        vis.svg.append('path')
+        vis.chart.append('path')
             .attr('class', 'line')
             .attr('fill', 'none')
-            .attr('stroke', '#2a6dff') // this is the same color as the header block. 
+            .attr('stroke', '#2a6dff') // this is the same color as the header block.
             // I picked it for consistency but it might be too bright for the line, we can think about this later
             .attr('stroke-width', 1.5);
         }
@@ -142,16 +142,16 @@ class Timeline {
         }
 
         // call axes
-        vis.svg.select('.x-axis').call(vis.xAxis);
-        vis.svg.select('.y-axis').call(vis.yAxis);
+        vis.chart.select('.x-axis').call(vis.xAxis);
+        vis.chart.select('.y-axis').call(vis.yAxis);
 
         // draw the line
-        vis.svg.select('.line')
+        vis.chart.select('.line')
             .datum(vis.aggregatedData)
             .attr('d', vis.line);
 
         // draw points on each week so that we have a place to attach the tooltips
-        vis.svg.selectAll('.timeline-point')
+        vis.chart.selectAll('.timeline-point')
             .data(vis.aggregatedData, d => +d.date)
             .join('circle')
             .attr('class', 'timeline-point')
