@@ -33,6 +33,16 @@ class Timeline {
         vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
         vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
 
+        // define size of SVG drawing area based on the specified SVG window
+        vis.svg = d3.select(vis.config.parentElement)
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${vis.config.containerWidth} ${vis.config.containerHeight}`)
+            .attr('preserveAspectRatio', 'none');
+
+        vis.svg.append('g')
+            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
+
         vis.xScale = d3.scaleTime()
             .range([0, vis.width]);
 
@@ -42,13 +52,6 @@ class Timeline {
         vis.xAxis = d3.axisBottom(vis.xScale);
         vis.yAxis = d3.axisLeft(vis.yScale);
 
-        vis.svg = d3.select(vis.config.parentElement)
-            .append('svg')
-            .attr('width', vis.config.containerWidth)
-            .attr('height', vis.config.containerHeight)
-            .append('g')
-            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
-    
         vis.svg.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0, ${vis.height})`);
