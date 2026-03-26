@@ -548,6 +548,11 @@ class LeafletMap {
 
           // rerender dots
           vis.updateVis();
+
+          // rerender service type bar chart to reflect updated colors
+          if (typeof serviceTypeDistribution !== 'undefined' && serviceTypeDistribution) {
+            serviceTypeDistribution.renderVis();
+          }
         });
 
       // visibility checkbox

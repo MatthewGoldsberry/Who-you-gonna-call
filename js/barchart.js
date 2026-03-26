@@ -16,6 +16,10 @@ class BarChart {
      *  - yAxisLabel: y-axis label
      *  - yScaleType: type of scaling to apply to y axis
      *  - xAxisTickRotation: axis rotations to cleanly fit x axis labels
+     *  - labelMap: optional map of category value to display label for axis ticks
+     *  - wrapLabels: if true, splits tick labels on spaces into multiple tspan lines
+     *  - colorScale: D3 scale function mapping category value to color
+     *  - colorByKey: the colorBy value that activates colorScale
      * @param {Array} _data
      */
     constructor(_config, _data) {
@@ -33,6 +37,8 @@ class BarChart {
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
             labelMap: _config.labelMap || null,
             wrapLabels: _config.wrapLabels || false,
+            colorScale: _config.colorScale || null,
+            colorByKey: _config.colorByKey || null,
         }
         this.data = _data;
         this.initVis();
@@ -162,7 +168,9 @@ class BarChart {
             .attr('height', d => vis.height - vis.yScale(d.count)) 
             .attr('y', d => vis.yScale(d.count))
             .attr('x', d => vis.xScale(d.category))
-            .attr('fill', 'steelblue')
+            .attr('fill', d => (vis.config.colorScale && leafletMap && leafletMap.colorBy === vis.config.colorByKey)
+                ? vis.config.colorScale(d.category)
+                : 'steelblue')
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
@@ -242,8 +250,7 @@ class BarChart {
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
-        const xTicks = vis.xAxisG.selectAll('.tick text')
-            .style('font-size', '0.85rem');
+        const xTicks = vis.xAxisG.selectAll('.tick text');
 
         // if wrapLabels, split each tick label at its spaces and put each word into a separate line
         if (vis.config.wrapLabels) {

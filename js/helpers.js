@@ -69,9 +69,11 @@ const NEIGHBORHOOD_ABBREVIATIONS = {
  * @param {string} yScale - type of scaling to apply to y axis (defaults to linear)
  * @param {Object|null} labelMap - optional map of category value → display label for axis ticks
  * @param {boolean} wrapLabels - if true, splits tick labels on spaces into multiple lines
+ * @param {Function|null} colorScale - D3 scale function mapping category value to color
+ * @param {string|null} colorByKey - the colorBy value that activates colorScale
  * @returns {BarChart} - bar chart instance
  */
-function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation, yScaleType = 'linear', labelMap = null, wrapLabels = false) {
+function updateBarChart(data, attributeKey, chartInstance, parentElement, category, title, yAxisLabel, xAxisTickRotation, yScaleType = 'linear', labelMap = null, wrapLabels = false, colorScale = null, colorByKey = null) {
 
     // create new instance if it doesn't exist
     if (!chartInstance) {
@@ -85,6 +87,8 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
             xAxisTickRotation: xAxisTickRotation,
             labelMap: labelMap,
             wrapLabels: wrapLabels,
+            colorScale: colorScale,
+            colorByKey: colorByKey,
         }, data);
     } else {
         // update existing instance
@@ -95,6 +99,8 @@ function updateBarChart(data, attributeKey, chartInstance, parentElement, catego
         chartInstance.config.yScaleType = yScaleType;
         chartInstance.config.labelMap = labelMap;
         chartInstance.config.wrapLabels = wrapLabels;
+        chartInstance.config.colorScale = colorScale;
+        chartInstance.config.colorByKey = colorByKey;
         chartInstance.data = data;
         chartInstance.updateVis();
         return chartInstance;
