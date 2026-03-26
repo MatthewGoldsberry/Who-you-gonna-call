@@ -211,7 +211,9 @@ function injectSwapButtons() {
             // swap out of main area if already in it, else move into the main area
             activeSwapIndex === i ? swapBack() : swapChartToMain(i);
         });
-        chartWrapper.appendChild(btn);
+        // inject into the chart-controls created by the BarChart.initVis()
+        // prepend so this goes into the left corner and the dropdown gets bumped to the right
+        chartWrapper.querySelector('.chart-controls').prepend(btn);
     });
 
     // add the swap button to the map element but hide it to start as it only appears
