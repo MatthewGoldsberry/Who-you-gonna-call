@@ -347,7 +347,7 @@ body {
 }
 
 .dot.focused {
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .has-focus .dot:not(.focused) {
