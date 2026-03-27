@@ -219,6 +219,9 @@ class BarChart {
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
+                // cancel any pending unhighlight from leaving the previous bar
+                clearTimeout(vis.hoverOutTimeout);
+
                 // get the SR_NUMBERs of the selected bin
                 const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
 
@@ -261,13 +264,16 @@ class BarChart {
                     .style('top', yPosition + 'px')
             })
             .on('mouseout', () => {
-                unhighlightRequest();
-                if (leafletMap) {
-                    // Clear the transient filter to match the heatmap to the leaflet map state
-                    leafletMap.setTransientHeatmapFilter(null);
-                }
-                // remove tooltip
-                d3.select('#tooltip').style('opacity', 0);
+                // delay so moving directly to another bar cancels this before it runs
+                vis.hoverOutTimeout = setTimeout(() => {
+                    unhighlightRequest();
+                    if (leafletMap) {
+                        // Clear the transient filter to match the heatmap to the leaflet map state
+                        leafletMap.setTransientHeatmapFilter(null);
+                    }
+                    // remove tooltip
+                    d3.select('#tooltip').style('opacity', 0);
+                }, 100);
             })
             .on('click', (event, d) => {
                 // persist selection of service requests in the given bin
