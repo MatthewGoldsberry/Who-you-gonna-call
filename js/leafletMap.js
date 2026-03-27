@@ -454,10 +454,6 @@ class LeafletMap {
    */
   refreshBrushExtent() {
     let vis = this;
-    // Update the brush's allowed area to match the current map size
-    vis.brush.extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]]);
-    vis.brushG.call(vis.brush);
-
     // If there's an active selection, move it to the new bounds
     if (vis.currentBrushSelection) {
       vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
