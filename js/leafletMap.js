@@ -209,6 +209,13 @@ class LeafletMap {
       vis.updateHeatmap();
     });
 
+    // Redraw the heatmap after the user finishes panning so the blobs follow the map
+    vis.theMap.on("moveend", function () {
+      if (vis.heatmapEnabled) {
+        vis.updateHeatmap();
+      }
+    });
+
     vis.buildLegend();
   }
 
@@ -306,11 +313,16 @@ class LeafletMap {
   resizeHeatmapCanvas() {
     let vis = this;
     const mapSize = vis.theMap.getSize();
+    const topLeft = vis.theMap.containerPointToLayerPoint([0, 0]);
+
     vis.heatmapCanvas
       .attr('width', mapSize.x)
       .attr('height', mapSize.y)
       .style('width', `${mapSize.x}px`)
       .style('height', `${mapSize.y}px`);
+
+    // Move the canvas element so its top-left corner lines up with the visible map area
+    L.DomUtil.setPosition(vis.heatmapCanvas.node(), topLeft);
   }
 
   // Heatmap color stuff
@@ -418,6 +430,10 @@ class LeafletMap {
     offscreenCanvas.width = mapSize.x;
     offscreenCanvas.height = mapSize.y;
     const offscreenCtx = offscreenCanvas.getContext('2d');
+
+    // Offset the drawing origin so data points land in the right spot relative to where the canvas was moved to
+    const topLeft = vis.theMap.containerPointToLayerPoint([0, 0]);
+    offscreenCtx.translate(-topLeft.x, -topLeft.y);
 
     // First paint grayscale intensity blobs to an offscreen canvas
     aggregatedPoints.forEach(d => {
