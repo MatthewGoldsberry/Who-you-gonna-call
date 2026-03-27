@@ -170,8 +170,16 @@ class LeafletMap {
         unhighlightRequest();
         d3.select('#tooltip').style('opacity', 0);
       })
+      .on('mousedown', function(event) {
+        vis.dragStartX = event.clientX;
+        vis.dragStartY = event.clientY;
+      })
       .on('click', function(event, d) {
-        // persist the selection of dot
+        const dx = event.clientX - vis.dragStartX;
+        const dy = event.clientY - vis.dragStartY;
+        // if the user moved more than 5 pixels from the start of the click assume it was a drag event and do not make the selection
+        if (Math.sqrt(dx * dx + dy * dy) > 5) return;
+        // else, persist the selection of dot
         handleSelection(d.SR_NUMBER);
       })
 
@@ -232,7 +240,7 @@ class LeafletMap {
     if (vis.currentBrushSelection) {
       vis.applySelectionFromBounds(vis.currentBrushSelection, true);
     }
-  // update heatmap on update to the map, even if hidden
+    // update heatmap on update to the map, even if hidden
     vis.updateHeatmap();
 
     highlightRequest();
