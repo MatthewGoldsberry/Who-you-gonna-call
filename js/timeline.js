@@ -18,6 +18,8 @@ class Timeline {
         }
 
         this.data = _data;
+        this.currentBrushSelection = null;
+        this.currentBrushDateRange = null;
         this.initVis();
     }
 
@@ -83,6 +85,15 @@ class Timeline {
             .attr('stroke', 'steelblue') // this is the same color as the header block. 
             // I picked it for consistency but it might be too bright for the line, we can think about this later
             .attr('stroke-width', 1.5);
+
+        vis.brushG = vis.chart.append('g')
+            .attr('class', 'brush timeline-brush');
+
+        vis.brush = d3.brushX()
+            .extent([[0, 0], [vis.width, vis.height]])
+            .on('end', event => vis.handleTimelineBrush(event));
+
+        vis.brushG.call(vis.brush);
         }
 
     /**
@@ -202,6 +213,38 @@ class Timeline {
                 handleSelections(srNumbersInWeek);
             });
 
+        // keep brush bounds if the timeline is redrawn after a filter update
+        if (vis.currentBrushDateRange) {
+            const [start, end] = vis.currentBrushDateRange;
+            const x0 = vis.xScale(start);
+            const x1 = vis.xScale(end);
+            vis.currentBrushSelection = [x0, x1];
+            vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+        } else if (vis.currentBrushSelection) {
+            vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+        }
+
         highlightRequest();
+    }
+
+    handleTimelineBrush(event) {
+        let vis = this;
+        const selection = event.selection;
+
+        if (!leafletMap) return;
+
+        if (!selection) {
+            vis.currentBrushSelection = null;
+            leafletMap.clearDateRangeFilter();
+            return;
+        }
+
+        const [x0, x1] = selection;
+        const startDate = vis.xScale.invert(Math.min(x0, x1));
+        const endDate = vis.xScale.invert(Math.max(x0, x1));
+        vis.currentBrushSelection = [x0, x1];
+        vis.currentBrushDateRange = [startDate, endDate];
+
+        leafletMap.filterByDateRange(startDate, endDate);
     }
 }

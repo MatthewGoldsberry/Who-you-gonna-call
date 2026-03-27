@@ -37,6 +37,7 @@ class LeafletMap {
     this.brushingEnabled = false;
     this.heatmapEnabled = false;
     this.transientHeatmapFilter = null;
+    this.dateRangeFilter = null;
     this.hiddenServiceTypes = new Set();
     this.serviceTypeColors = {
       'DUMPING':   '#e6194b',
@@ -187,8 +188,8 @@ class LeafletMap {
     vis.brush = d3.brush()
       .extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]])
       .filter(event => vis.brushingEnabled && !event.button)
-      .on('start end', function(event) {
-        vis.handleBrush(event);
+      .on('end', function(event) {
+        vis.handleMapBrush(event);
       });
 
     // Attach the brush to the SVG; initially hidden until brush mode is enabled
@@ -226,7 +227,15 @@ class LeafletMap {
           const isFocused = d3.select(nodes[i]).classed('focused');
           return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
       })
-      .attr("display", d => vis.hiddenServiceTypes.has(d.SR_TYPE) ? 'none' : null);
+      .attr("display", d => {
+          const hiddenByServiceType = vis.hiddenServiceTypes.has(d.SR_TYPE);
+          const hiddenByDateRange = vis.dateRangeFilter ? (() => {
+              const created = new Date(d.DATE_CREATED);
+              if (isNaN(created)) return true;
+              return created < vis.dateRangeFilter[0] || created > vis.dateRangeFilter[1];
+          })() : false;
+          return hiddenByServiceType || hiddenByDateRange ? 'none' : null;
+      });
 
 
     if (vis.currentBrushSelection) {
@@ -242,11 +251,11 @@ class LeafletMap {
    * Handles brushing events and updates selected records.
    * @param {Object} event - D3 brush event containing {selection, type, ...}
    */
-  handleBrush(event) {
+  handleMapBrush(event) {
     let vis = this;
     const selection = event.selection;
 
-    // If selection is null (brush was cleared), reset everything
+    // If selection is null, only clear on brush end.
     if (!selection) {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
@@ -354,14 +363,41 @@ class LeafletMap {
     this.updateHeatmap();
   }
 
+  filterByDateRange(startDate, endDate) {
+    let vis = this;
+    if (!startDate || !endDate) {
+      vis.dateRangeFilter = null;
+    } else {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (isNaN(start) || isNaN(end)) {
+        vis.dateRangeFilter = null;
+      } else {
+        vis.dateRangeFilter = start <= end ? [start, end] : [end, start];
+      }
+    }
+    vis.updateVis();
+  }
+
+  clearDateRangeFilter() {
+    this.filterByDateRange(null, null);
+  }
+
   getHeatmapData() {
     let vis = this;
     const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
 
     // exclude any service types hidden via the legend checkboxes
-    const visibleData = vis.hiddenServiceTypes.size > 0
+    let visibleData = vis.hiddenServiceTypes.size > 0
       ? baseData.filter(d => !vis.hiddenServiceTypes.has(d.SR_TYPE))
       : baseData;
+
+    if (vis.dateRangeFilter) {
+      visibleData = visibleData.filter(d => {
+        const created = new Date(d.DATE_CREATED);
+        return !isNaN(created) && created >= vis.dateRangeFilter[0] && created <= vis.dateRangeFilter[1];
+      });
+    }
 
     if (!vis.transientHeatmapFilter) {
       return visibleData;
