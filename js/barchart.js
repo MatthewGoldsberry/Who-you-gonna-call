@@ -16,6 +16,10 @@ class BarChart {
      *  - yAxisLabel: y-axis label
      *  - yScaleType: type of scaling to apply to y axis
      *  - xAxisTickRotation: axis rotations to cleanly fit x axis labels
+     *  - labelMap: optional map of category value to display label for axis ticks
+     *  - wrapLabels: if true, splits tick labels on spaces into multiple tspan lines
+     *  - colorScale: D3 scale function mapping category value to color
+     *  - colorByKey: the colorBy value that activates colorScale
      * @param {Array} _data
      */
     constructor(_config, _data) {
@@ -23,7 +27,7 @@ class BarChart {
             parentElement: _config.parentElement,
             containerWidth: _config.containerWidth || 800,
             containerHeight: _config.containerHeight || 300,
-            margin: _config.margin || { top: 50, right: 20, bottom: 50, left: 70 },
+            margin: _config.margin || { top: 50, right: 20, bottom: _config.xAxisTickRotation === 'vertical' ? 72 : 50, left: 70 },
             tooltipPadding: _config.tooltipPadding || 15,
             attributeKey: _config.attributeKey,
             category: _config.category,
@@ -31,6 +35,10 @@ class BarChart {
             yAxisLabel: _config.yAxisLabel,
             yScaleType: _config.yScaleType || 'linear',
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
+            labelMap: _config.labelMap || null,
+            wrapLabels: _config.wrapLabels || false,
+            colorScale: _config.colorScale || null,
+            colorByKey: _config.colorByKey || null,
         }
         this.data = _data;
         this.initVis();
@@ -97,6 +105,33 @@ class BarChart {
             .attr('x', 0 - (vis.height / 2))
             .style('text-anchor', 'middle')
             .text(vis.config.yAxisLabel);
+    
+        // scale selector dropdown
+        // inject into chart-wrapper so this dropdown will travel with the swap
+        const wrapper = vis.svg.node().parentElement;
+        const controls = document.createElement('div');
+        controls.className = 'chart-controls';
+
+        // create dropdown element with a change event handler
+        const scaleSelect = document.createElement('select');
+        scaleSelect.className = 'scale-selector';
+        scaleSelect.title = 'Y-axis scale type';
+        ['linear', 'log', 'sqrt'].forEach((scale) => {
+            const opt = document.createElement('option');
+            opt.value = scale;
+            opt.textContent = scale;
+            if (scale === vis.config.yScaleType) opt.selected = true;
+            scaleSelect.appendChild(opt);
+        });
+        scaleSelect.addEventListener('change', e => {
+            // on change read in the new value and update the bar chart
+            vis.config.yScaleType = e.target.value;
+            vis.updateVis();
+        });
+
+        // append the swap button container and scale selector to the wrapper
+        wrapper.appendChild(controls);
+        wrapper.appendChild(scaleSelect);
 
         // render initial visualization
         vis.updateVis();
@@ -160,7 +195,9 @@ class BarChart {
             .attr('height', d => vis.height - vis.yScale(d.count)) 
             .attr('y', d => vis.yScale(d.count))
             .attr('x', d => vis.xScale(d.category))
-            .attr('fill', 'steelblue')
+            .attr('fill', d => (vis.config.colorScale && leafletMap && leafletMap.colorBy === vis.config.colorByKey)
+                ? vis.config.colorScale(d.category)
+                : 'steelblue')
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
@@ -182,19 +219,24 @@ class BarChart {
         // hover handler to highlight all instances of hovered bin in page
         vis.chart.selectAll('.bar')
             .on('mouseover', (event, d) => {
+                // cancel any pending unhighlight from leaving the previous bar
+                clearTimeout(vis.hoverOutTimeout);
+
                 // get the SR_NUMBERs of the selected bin
                 const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
 
                 highlightRequests(srNumbersInBin);
+                if (leafletMap) {
+                    // Bar hover previews the matching records in the heatmap
+                    leafletMap.setTransientHeatmapFilter(srNumbersInBin);
+                }
                 // tooltip creation
                 // set the tool tip position and automatically handle if it was going to be off page
                 const tooltip = d3.select('#tooltip');
 
-                // defined everything but left position 
                 tooltip
                     .style('opacity', 1)
                     .style('display', 'block')
-                    .style('top', (event.pageY + vis.config.tooltipPadding) + 'px') // can style top because y bounds will never go out of page view
                     .html(`
                         <div class="tooltip-content">
                             <strong>${vis.config.category}:</strong> ${d.category}<br>
@@ -203,40 +245,75 @@ class BarChart {
                     `);
 
                 // get the dimensions of the generated tooltip box
-                const tooltipWidth = tooltip.node().getBoundingClientRect().width;
+                const tooltipRect = tooltip.node().getBoundingClientRect();
 
-                // calculate horizontal position, updating if the box is going to be outside of page
-                let xPosition = event.pageX; // Note to self: have to store outside of conditional for position update to work 
-                if ((xPosition + tooltipWidth + vis.config.tooltipPadding) > window.innerWidth) {
-                    xPosition = event.pageX - tooltipWidth;
+                // calculate horizontal position, updating if the box is going to be outside the right edge
+                let xPosition = event.pageX;
+                if ((xPosition + tooltipRect.width + vis.config.tooltipPadding) > window.innerWidth) {
+                    xPosition = event.pageX - tooltipRect.width;
                 }
 
-                // set the x position of the tooltip
-                tooltip.style('left', xPosition + 'px')
+                // calculate vertical position, updating if the box is going to be outside the bottom edge
+                let yPosition = event.pageY + vis.config.tooltipPadding;
+                if ((yPosition + tooltipRect.height) > (window.scrollY + window.innerHeight)) {
+                    yPosition = event.pageY - tooltipRect.height - vis.config.tooltipPadding;
+                }
+
+                tooltip
+                    .style('left', xPosition + 'px')
+                    .style('top', yPosition + 'px')
             })
             .on('mouseout', () => {
-                unhighlightRequest();
-                // remove tooltip
-                d3.select('#tooltip').style('opacity', 0);
+                // delay so moving directly to another bar cancels this before it runs
+                vis.hoverOutTimeout = setTimeout(() => {
+                    unhighlightRequest();
+                    if (leafletMap) {
+                        // Clear the transient filter to match the heatmap to the leaflet map state
+                        leafletMap.setTransientHeatmapFilter(null);
+                    }
+                    // remove tooltip
+                    d3.select('#tooltip').style('opacity', 0);
+                }, 100);
+            })
+            .on('click', (event, d) => {
+                // persist selection of service requests in the given bin
+                const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
+                handleSelections(srNumbersInBin);
             })
 
-        // update axis labels and ticks
+        // update axis labels and ticks; apply abbreviated labels if a labelMap was provided
         vis.xAxis = d3.axisBottom(vis.xScale)
-            .tickSizeOuter(0);
+            .tickSizeOuter(0)
+            .tickFormat(d => vis.config.labelMap?.[d] ?? d);
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
-        const xTicks = vis.xAxisG.selectAll('.tick text')
-            .style('font-size', '0.85rem');
+        const xTicks = vis.xAxisG.selectAll('.tick text');
+
+        // if wrapLabels, split each tick label at its spaces and put each word into a separate line
+        if (vis.config.wrapLabels) {
+            xTicks.each(function() {
+                const element = d3.select(this);
+                const words = element.text().split(' ');
+                if (words.length <= 1) return;
+                element.text(null);
+                words.forEach((word, i) => {
+                    element.append('tspan')
+                        .attr('x', 0)
+                        .attr('dy', i === 0 ? '.71em' : '1em')
+                        .text(word);
+                });
+            });
+        }
 
         // configure the y-axis ticks
         const yAxis = d3.axisLeft(vis.yScale)
-            .tickSize(-vis.width) 
+            .tickSize(-vis.width)
             .tickSizeOuter(0);
 
         // format to 5 ticks, applying additional formatting for log
         if (vis.config.yScaleType === 'log') {
-            yAxis.ticks(5, "~s"); 
+            yAxis.ticks(5, "~s");
         } else {
             yAxis.ticks(5);
         }
@@ -247,19 +324,13 @@ class BarChart {
             .selectAll('line')
             .attr('stroke', 'darkgrey');
 
-        // handle orienting the x-axis labels 
+        // handle orienting the x-axis labels
         if (vis.config.xAxisTickRotation === 'vertical') {
             xTicks
                 .style('text-anchor', 'end')
                 .attr('dx', '-.8em')
-                .attr('dy', '-.5em') 
+                .attr('dy', '-.5em')
                 .attr('transform', 'rotate(-90)');
-        } else if (vis.config.xAxisTickRotation === 'angled') {
-            xTicks
-                .style('text-anchor', 'end')
-                .attr('dx', '-.8em')
-                .attr('dy', '.15em')
-                .attr('transform', 'rotate(-45)');
         } // default to horizontal
 
         highlightRequest();

@@ -26,14 +26,26 @@ class LeafletMap {
   constructor(_config, _data) {
     this.config = {
       parentElement: _config.parentElement,
-      onSelectionChange: _config.onSelectionChange || (() => {})
+      onSelectionChange: _config.onSelectionChange || (() => {}),
+      onFilterChange: _config.onFilterChange || (() => {})
     }
     this.data = _data;
-    this.colorBy = 'neighborhood';
+    this.colorBy = 'serviceType';
     this.mapBackground = 'street';
     this.currentBrushSelection = null; // Stores the current brush coordinate bounds
     this.selectedData = [];
     this.brushingEnabled = false;
+    this.heatmapEnabled = false;
+    this.transientHeatmapFilter = null;
+    this.hiddenServiceTypes = new Set();
+    this.serviceTypeColors = {
+      'DUMPING':   '#e6194b',
+      'GRAFFITI':  '#3cb44b',
+      'LITTERING': '#f58231',
+      'TIRES':     '#ffe119',
+      'TRASH':     '#42d4f4',
+      'VACANT':    '#911eb4'
+    };
     this.initVis();
   }
 
@@ -76,7 +88,25 @@ class LeafletMap {
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane)
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
-    // TODO some color theory work needs to be done here
+    // A canvas overlay is used for the heatmap, always present but only visible when toggled on
+    vis.heatmapCanvas = vis.overlay.append('canvas')
+      .attr('class', 'heatmap-canvas')
+      .style('position', 'absolute')
+      .style('top', 0)
+      .style('left', 0)
+      .style('pointer-events', 'none')
+      .style('display', 'none');
+    vis.heatmapCtx = vis.heatmapCanvas.node().getContext('2d');
+    vis.heatmapPalette = vis.createHeatmapPalette();
+    vis.resizeHeatmapCanvas();
+
+        // create color scale dynamically for service types
+    vis.colorScaleServiceType = d3.scaleOrdinal()
+        .domain(Object.keys(vis.serviceTypeColors))
+        .range(Object.values(vis.serviceTypeColors));
+
+    // create color scale for agencies
+    vis.colorScaleAgency = d3.scaleOrdinal(['#e6194b', '#42d4f4', '#4363d8', '#f58231', '#911eb4', '#3cb44b', '#ffe119']);
 
     // create color scale for the priority of request
     vis.colorScalePriority = d3.scaleOrdinal()
@@ -89,8 +119,7 @@ class LeafletMap {
       '#fabebe', '#008080', '#e6beff', '#9a6324', '#fffac8', '#aaffc3', '#808000', '#ffd8b1'
     ];
 
-    // create the categorical scales for departments and neighborhoods
-    vis.colorScaleAgency = d3.scaleOrdinal(distinctColors);
+    // create the categorical scales neighborhoods
     vis.colorScaleNeighborhood = d3.scaleOrdinal(distinctColors);
 
     // preprocess the times and create a color scale for time to update
@@ -141,6 +170,18 @@ class LeafletMap {
         unhighlightRequest();
         d3.select('#tooltip').style('opacity', 0);
       })
+      .on('mousedown', function(event) {
+        vis.dragStartX = event.clientX;
+        vis.dragStartY = event.clientY;
+      })
+      .on('click', function(event, d) {
+        const dx = event.clientX - vis.dragStartX;
+        const dy = event.clientY - vis.dragStartY;
+        // if the user moved more than 5 pixels from the start of the click assume it was a drag event and do not make the selection
+        if (Math.sqrt(dx * dx + dy * dy) > 5) return;
+        // else, persist the selection of dot
+        handleSelection(d.SR_NUMBER);
+      })
 
     // handler here for updating the map, as you zoom in and out           
     vis.theMap.on("zoomend", function () {
@@ -152,7 +193,7 @@ class LeafletMap {
 
     // Initialize the D3 brush behavior
     vis.brush = d3.brush()
-      .extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]])
+      .extent([[-100000, -100000], [100000, 100000]]) // allow brushing box to be moved past the bounds of the visual map
       .filter(event => vis.brushingEnabled && !event.button)
       .on('start brush end', function(event) {
         vis.handleBrush(event);
@@ -163,8 +204,19 @@ class LeafletMap {
     vis.brushG.style('display', 'none');
 
     vis.theMap.on('resize', () => {
+      vis.resizeHeatmapCanvas();
       vis.refreshBrushExtent();
+      vis.updateHeatmap();
     });
+
+    // Redraw the heatmap after the user finishes panning so the blobs follow the map
+    vis.theMap.on("moveend", function () {
+      if (vis.heatmapEnabled) {
+        vis.updateHeatmap();
+      }
+    });
+
+    vis.buildLegend();
   }
 
   /**
@@ -178,7 +230,9 @@ class LeafletMap {
     vis.dynamicRadius = currentZoom - 8;
 
     // redraw based on new zoom; need to recalculate on-screen position
+    // In heatmap mode the circles remain in the DOM for shared highlight logic, but are hidden visually for easy switching between modes
     vis.Dots
+      .style('display', vis.heatmapEnabled ? 'none' : null)
       .attr("cx", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).x)
       .attr("cy", d => vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]).y)
       .attr("fill", d => vis.getColor(d))
@@ -186,12 +240,15 @@ class LeafletMap {
       .attr("r", (d, i, nodes) => {
           const isFocused = d3.select(nodes[i]).classed('focused');
           return isFocused ? vis.dynamicRadius + 2 : vis.dynamicRadius;
-      });
+      })
+      .attr("display", d => vis.hiddenServiceTypes.has(d.SR_TYPE) ? 'none' : null);
 
 
     if (vis.currentBrushSelection) {
       vis.applySelectionFromBounds(vis.currentBrushSelection, true);
     }
+    // update heatmap on update to the map, even if hidden
+    vis.updateHeatmap();
 
     highlightRequest();
   }
@@ -210,6 +267,7 @@ class LeafletMap {
       vis.selectedData = [];
       resetSelection();
       vis.config.onSelectionChange(null);
+      vis.updateHeatmap();
       return;
     }
 
@@ -247,6 +305,163 @@ class LeafletMap {
     if (notify) {
       vis.config.onSelectionChange(vis.selectedData);
     }
+
+    vis.updateHeatmap();
+  }
+
+  // Used to resize the heatmap canvas element to match the leaflet map
+  resizeHeatmapCanvas() {
+    let vis = this;
+    const mapSize = vis.theMap.getSize();
+    const topLeft = vis.theMap.containerPointToLayerPoint([0, 0]);
+
+    vis.heatmapCanvas
+      .attr('width', mapSize.x)
+      .attr('height', mapSize.y)
+      .style('width', `${mapSize.x}px`)
+      .style('height', `${mapSize.y}px`);
+
+    // Move the canvas element so its top-left corner lines up with the visible map area
+    L.DomUtil.setPosition(vis.heatmapCanvas.node(), topLeft);
+  }
+
+  // Heatmap color stuff
+  createHeatmapPalette() {
+    const paletteCanvas = document.createElement('canvas');
+    paletteCanvas.width = 256;
+    paletteCanvas.height = 1;
+
+    const paletteCtx = paletteCanvas.getContext('2d');
+    const gradient = paletteCtx.createLinearGradient(0, 0, 256, 0);
+    gradient.addColorStop(0.00, '#1e3a8a');
+    gradient.addColorStop(0.25, '#0ea5e9');
+    gradient.addColorStop(0.50, '#22c55e');
+    gradient.addColorStop(0.75, '#facc15');
+    gradient.addColorStop(1.00, '#dc2626');
+    paletteCtx.fillStyle = gradient;
+    paletteCtx.fillRect(0, 0, 256, 1);
+
+    return paletteCtx.getImageData(0, 0, 256, 1).data;
+  }
+
+  clearHeatmap() {
+    let vis = this;
+    vis.heatmapCtx.clearRect(0, 0, vis.theMap.getSize().x, vis.theMap.getSize().y);
+  }
+
+  setHeatmapEnabled(enabled) {
+    // Toggling heatmap mode only changes presentation; the underlying data and brush state are preserved.
+    this.heatmapEnabled = enabled;
+    this.heatmapCanvas.style('display', this.heatmapEnabled ? 'block' : 'none');
+    this.Dots.style('display', this.heatmapEnabled ? 'none' : null);
+
+    if (!this.heatmapEnabled) {
+      this.transientHeatmapFilter = null;
+      this.clearHeatmap();
+    } else {
+      this.updateHeatmap();
+    }
+  }
+
+  toggleHeatmapMode() {
+    this.setHeatmapEnabled(!this.heatmapEnabled);
+    return this.heatmapEnabled;
+  }
+
+  setTransientHeatmapFilter(srNumbers = null) {
+    // Linked hover interactions provide a list of SR_NUMBERs to preview in the heatmap temporarily.
+    this.transientHeatmapFilter = srNumbers && srNumbers.length > 0 ? new Set(srNumbers) : null;
+    this.updateHeatmap();
+  }
+
+  getHeatmapData() {
+    let vis = this;
+    const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
+
+    // exclude any service types hidden via the legend checkboxes
+    const visibleData = vis.hiddenServiceTypes.size > 0
+      ? baseData.filter(d => !vis.hiddenServiceTypes.has(d.SR_TYPE))
+      : baseData;
+
+    if (!vis.transientHeatmapFilter) {
+      return visibleData;
+    }
+
+    // Get subset of data matching the filter so that the heatmap can reflect the linked interactions from leaflet
+    return visibleData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
+  }
+
+  updateHeatmap() {
+    let vis = this;
+
+    if (!vis.heatmapEnabled || !vis.heatmapCtx) {
+      return;
+    }
+
+    vis.resizeHeatmapCanvas();
+    vis.clearHeatmap();
+
+    const heatmapData = vis.getHeatmapData();
+    if (heatmapData.length === 0) {
+      return;
+    }
+
+    const mapSize = vis.theMap.getSize();
+    const radius = Math.max(18, Math.round(vis.dynamicRadius * 7));
+    const cellSize = Math.max(12, Math.round(radius / 2));
+    const bins = new Map();
+
+    heatmapData.forEach(d => {
+      const point = vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]);
+      const cellX = Math.round(point.x / cellSize);
+      const cellY = Math.round(point.y / cellSize);
+      const key = `${cellX}:${cellY}`;
+
+      if (!bins.has(key)) {
+        bins.set(key, { x: point.x, y: point.y, count: 0 });
+      }
+
+      bins.get(key).count += 1;
+    });
+
+    const aggregatedPoints = Array.from(bins.values());
+    const maxCount = d3.max(aggregatedPoints, d => d.count) || 1;
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = mapSize.x;
+    offscreenCanvas.height = mapSize.y;
+    const offscreenCtx = offscreenCanvas.getContext('2d');
+
+    // Offset the drawing origin so data points land in the right spot relative to where the canvas was moved to
+    const topLeft = vis.theMap.containerPointToLayerPoint([0, 0]);
+    offscreenCtx.translate(-topLeft.x, -topLeft.y);
+
+    // First paint grayscale intensity blobs to an offscreen canvas
+    aggregatedPoints.forEach(d => {
+      const intensity = d.count / maxCount;
+      const gradient = offscreenCtx.createRadialGradient(d.x, d.y, 0, d.x, d.y, radius);
+      gradient.addColorStop(0, `rgba(0, 0, 0, ${Math.min(0.95, 0.30 + intensity * 0.65)})`);
+      gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      offscreenCtx.fillStyle = gradient;
+      offscreenCtx.fillRect(d.x - radius, d.y - radius, radius * 2, radius * 2);
+    });
+
+    const image = offscreenCtx.getImageData(0, 0, mapSize.x, mapSize.y);
+
+    // Use palette to draw colors on the heatmap
+    for (let i = 0; i < image.data.length; i += 4) {
+      const alpha = image.data[i + 3];
+      if (alpha === 0) {
+        continue;
+      }
+
+      const paletteIndex = alpha * 4;
+      image.data[i] = vis.heatmapPalette[paletteIndex];
+      image.data[i + 1] = vis.heatmapPalette[paletteIndex + 1];
+      image.data[i + 2] = vis.heatmapPalette[paletteIndex + 2];
+      image.data[i + 3] = Math.min(230, alpha);
+    }
+
+    vis.heatmapCtx.putImageData(image, 0, 0);
   }
 
   /**
@@ -255,10 +470,6 @@ class LeafletMap {
    */
   refreshBrushExtent() {
     let vis = this;
-    // Update the brush's allowed area to match the current map size
-    vis.brush.extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]]);
-    vis.brushG.call(vis.brush);
-
     // If there's an active selection, move it to the new bounds
     if (vis.currentBrushSelection) {
       vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
@@ -299,6 +510,7 @@ class LeafletMap {
       vis.brushG.call(vis.brush.move, null);
       resetSelection();
       vis.config.onSelectionChange(null);
+      vis.updateHeatmap();
     }
   }
 
@@ -312,12 +524,123 @@ class LeafletMap {
   }
 
   /**
+   * Builds the floating service type legend panel with color pickers and visibility checkboxes.
+   */
+  buildLegend() {
+    let vis = this;
+
+    // get the list of service types from the color map
+    const types = Object.keys(vis.serviceTypeColors);
+
+    // create mapping between SR_TYPE and SR_TYPE_DESC to be added to the info buttons by service types
+    const subtypeMap = new Map();
+    types.forEach(type => subtypeMap.set(type, new Set()));
+    vis.data.forEach(d => {
+      if (subtypeMap.has(d.SR_TYPE) && d.SR_TYPE_DESC) {
+        subtypeMap.get(d.SR_TYPE).add(d.SR_TYPE_DESC);
+      }
+    });
+
+    // select the legend container and clear any previously rendered content
+    const panel = d3.select('#service-type-legend');
+    panel.html('');
+    panel.append('div').attr('class', 'legend-title').text('Service Types');
+
+    // create one row in the panel for each service type
+    types.forEach(type => {
+
+      // label each row with a consistent id for the checkbox handler to be able to find
+      const row = panel.append('div')
+        .attr('class', 'legend-row')
+        .attr('id', `legend-row-${type}`);
+
+      // color picker UI 
+      row.append('input')
+        .attr('type', 'color')
+        .attr('class', 'legend-color-picker')
+        .property('value', vis.serviceTypeColors[type])
+        .on('change', function () { 
+          // wait until user has submitted color change, updates are not done actively for performance reasons
+
+          // persist the new hex value back into serviceTypeColors to keep it in sync
+          vis.serviceTypeColors[type] = this.value;
+
+          // rebuild scale's range from serviceTypeColors 
+          vis.colorScaleServiceType.range(
+            Object.keys(vis.serviceTypeColors).map(t => vis.serviceTypeColors[t])
+          );
+
+          // rerender dots
+          vis.updateVis();
+
+          // rerender service type bar chart to reflect updated colors
+          if (typeof serviceTypeDistribution !== 'undefined' && serviceTypeDistribution) {
+            serviceTypeDistribution.renderVis();
+          }
+        });
+
+      // visibility checkbox
+      row.append('input')
+        .attr('type', 'checkbox')
+        .attr('class', 'legend-checkbox')
+        .property('checked', true)
+        .on('change', function () {
+          // remove type from hidden types if checkbox checked, else add it to hidden types
+          if (this.checked) {
+            vis.hiddenServiceTypes.delete(type);
+          } else {
+            vis.hiddenServiceTypes.add(type);
+          }
+
+          // strikethrough the service type name in the legend if the checkbox is not selected
+          d3.select(`#legend-row-${type}`).classed('hidden', !this.checked);
+
+          // rerender dots
+          vis.updateVis();
+
+          // send message to main.js to update data passed to all visualizations based on hidden types
+          vis.config.onFilterChange(vis.hiddenServiceTypes);
+        });
+
+      row.append('span').attr('class', 'legend-label').text(type);
+
+      // basic info icon html -- generated by Gemini
+      const infoSvg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>`;
+
+      // add an info icon about the data 
+      const subtypes = [...subtypeMap.get(type)].sort();
+      row.append('span')
+        .attr('class', 'legend-info-icon')
+        .html(infoSvg)
+        .on('mouseover', function() {
+          d3.select('#tooltip')
+            .style('opacity', 1)
+            .html(`
+              <div class="tooltip-content">
+                <strong>${type} includes:</strong><br>
+                ${subtypes.map(s => `&bull; ${s}`).join('<br>')}
+              </div>
+            `);
+        })
+        .on('mousemove', function(event) {
+          d3.select('#tooltip')
+            .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY + 10) + 'px');
+        })
+        .on('mouseout', function() {
+          d3.select('#tooltip').style('opacity', 0);
+        });
+    });
+  }
+
+  /**
    * determines the appropriate fill color for a given data point based on the current color by state
    * @param {Object} d 
    * @returns hex color code or valid CSS color string
    */
   getColor(d) {
     let vis = this;
+    if (vis.colorBy === 'serviceType') return vis.colorScaleServiceType(d.SR_TYPE);
     if (vis.colorBy === 'agency') return vis.colorScaleAgency(d.DEPT_NAME);
     if (vis.colorBy === 'neighborhood') return vis.colorScaleNeighborhood(d.NEIGHBORHOOD);
     if (vis.colorBy === 'priority') return vis.colorScalePriority(d.PRIORITY);

@@ -36,16 +36,49 @@ body {
   border-bottom: 1px solid lightgrey;
 }
 
+.header-title-group {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+}
+
 .dashboard-header h1 {
   margin: 0;
   font-size: 24px;
   font-weight: 600;
+  line-height: 1.1;
+}
+
+.header-subtitle {
+  font-size: 11px;
+  font-weight: 400;
+  color: #bfdbfe;
+  letter-spacing: 0.02em;
 }
 
 .dashboard-header p {
   margin: 0;
   font-size: 14px;
   color: #bfdbfe;
+}
+
+.reset-selection-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  color: white;
+  font-size: 12px;
+  font-family: inherit;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  white-space: nowrap;
+}
+
+.reset-selection-button:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 /* --- Map Area --- */
@@ -93,48 +126,126 @@ body {
 
 .dropdown-label {
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: black;
-  padding: 6px 4px 6px 10px;
+  padding: 5px 4px 5px 10px;
   white-space: nowrap;
 }
 
 .dropdown-select {
   flex: 1;
-  border: none; 
+  border: none;
   background-color: transparent;
-  padding: 6px 10px 6px 2px;
+  padding: 5px 10px 5px 2px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
-  color: darkslategray; 
+  font-size: 12px;
+  color: darkslategray;
   cursor: pointer;
   outline: none;
 }
 
-.brush-button {
+.brush-button,
+.heatmap-button {
   border: 1px solid lightgrey;
   background-color: rgba(255, 255, 255, 0.95);
   color: #1f2937;
   border-radius: 4px;
-  padding: 7px 10px;
+  padding: 5px 10px;
   font-family: Arial, Helvetica, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   cursor: pointer;
   box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
   transition: all 0.2s ease;
 }
 
-.brush-button:hover {
+.brush-button:hover,
+.heatmap-button:hover {
   background-color: white;
   border-color: darkgrey;
 }
 
-.brush-button.active {
+.brush-button.active,
+.heatmap-button.active {
   background-color: #2a6dff;
   border-color: #2a6dff;
   color: white;
+}
+
+/* --- Floating Service Type Legend --- */
+
+#service-type-legend {
+  background-color: rgba(255, 255, 255, 0.95);
+  border: 1px solid lightgrey;
+  border-radius: 4px;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
+  padding: 6px 8px; 
+}
+
+.legend-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: black;
+  margin-bottom: 5px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid lightgrey;
+}
+
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.legend-color-picker {
+  width: 16px; 
+  height: 20px;
+  border-radius: 3px;
+  padding: 0; 
+  cursor: pointer;
+  flex-shrink: 0;
+  background: none;
+}
+
+.legend-checkbox {
+  cursor: pointer;
+  flex-shrink: 0;
+  width: 12px;
+  height: 12px;
+  margin: 0;
+}
+
+.legend-label {
+  font-size: 12px;
+  color: #1f2937;
+  user-select: none;
+}
+
+.legend-info-icon {
+  font-size: 11px;
+  color: #9ca3af;
+  cursor: default;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.legend-info-icon:hover {
+  color: #6b7280;
+}
+
+.legend-row.hidden .legend-label {
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.legend-color-picker.disabled {
+  opacity: 0.3;
+  pointer-events: none;
+  cursor: default;
 }
 
 /* --- Floating Bottom-Left Note --- */
@@ -163,15 +274,138 @@ body {
   overflow: hidden;
 }
 
-.chart-container {
+.chart-wrapper {
   flex: 1;
-  width: 100%;
   position: relative;
+  border-bottom: 1px solid lightgrey;
+  overflow: hidden;
+}
+
+.chart-wrapper:last-child {
+  border-bottom: none;
+}
+
+/* Chart wrapper promoted to the main map area on swap */
+.chart-wrapper.in-main {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+  border-right: 1px solid lightgrey;
+  border-bottom: none;
+}
+
+.chart-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+/* Map zone demoted to the chart column on swap */
+.map-zone.in-column {
+  flex: 1;
+  border-right: none;
   border-bottom: 1px solid lightgrey;
 }
 
-.chart-container:last-child {
+.map-zone.in-column:last-child {
   border-bottom: none;
+}
+
+.map-zone.in-column #map-controls-top-left,
+.map-zone.in-column #missing-data-note {
+  display: none;
+}
+
+/* --- Chart Top-Left Controls (swap button + scale selector) --- */
+
+.chart-controls {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.swap-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 1px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+  line-height: 0;
+}
+
+.swap-button svg {
+  width: 14px;
+  height: 11px;
+}
+
+.swap-button:hover {
+  background: white;
+  border-color: darkgrey;
+}
+
+#map-swap-btn {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  z-index: 1000;
+}
+
+.scale-selector {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid lightgrey;
+  border-radius: 3px;
+  cursor: pointer;
+  padding: 1px 2px;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10px;
+  color: darkslategray;
+  outline: none;
+  box-shadow: 1px 1px 4px rgba(0,0,0,0.15);
+}
+
+.scale-selector:hover {
+  background: white;
+  border-color: darkgrey;
+}
+
+.chart-wrapper.in-main .swap-button {
+  padding: 4px 6px;
+  border-radius: 5px;
+}
+
+.chart-wrapper.in-main .swap-button svg {
+  width: 20px;
+  height: 16px;
+}
+
+.chart-wrapper.in-main .scale-selector {
+  font-size: 13px;
+  padding: 3px 4px;
+  right: 5px;
+}
+
+/* --- Bar Chart Configurations --- */
+.chart-title {
+  font-size: 24px;
+}
+
+.axis-title {
+  font-size: 18px;
+}
+
+.axis .tick text {
+  font-size: 14px;
 }
 
 /* --- Timeline Area --- */
@@ -182,6 +416,11 @@ body {
   background-color: white;
   border-top: 1px solid lightgrey;
   border-right: 1px solid lightgrey;
+}
+
+.timeline-container {
+  height: 100%;
+  width: 100%;
 }
 
 .axis-label {
@@ -222,6 +461,11 @@ body {
   cursor: crosshair;
 }
 
+.heatmap-canvas {
+  z-index: 350;
+  opacity: 0.8;
+}
+
 /* --- Focussing Configurations -- */
 
 .bar,
@@ -236,7 +480,7 @@ body {
 }
 
 .dot.focused {
-  opacity: 0.9;
+  opacity: 0.95;
 }
 
 .has-focus .dot:not(.focused) {
