@@ -193,7 +193,7 @@ class LeafletMap {
 
     // Initialize the D3 brush behavior
     vis.brush = d3.brush()
-      .extent([[0, 0], [vis.theMap.getSize().x, vis.theMap.getSize().y]])
+      .extent([[-100000, -100000], [100000, 100000]]) // allow brushing box to be moved past the bounds of the visual map
       .filter(event => vis.brushingEnabled && !event.button)
       .on('start end', function(event) {
         vis.handleBrush(event);
