@@ -33,6 +33,16 @@ class Timeline {
         vis.width = vis.config.containerWidth - vis.config.margin.left - vis.config.margin.right;
         vis.height = vis.config.containerHeight - vis.config.margin.top - vis.config.margin.bottom;
 
+        // define size of SVG drawing area based on the specified SVG window
+        vis.svg = d3.select(vis.config.parentElement)
+            .attr('width', '100%')
+            .attr('height', '100%')
+            .attr('viewBox', `0 0 ${vis.config.containerWidth} ${vis.config.containerHeight}`)
+            .attr('preserveAspectRatio', 'none');
+
+        vis.chart = vis.svg.append('g')
+            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
+
         vis.xScale = d3.scaleTime()
             .range([0, vis.width]);
 
@@ -42,28 +52,21 @@ class Timeline {
         vis.xAxis = d3.axisBottom(vis.xScale);
         vis.yAxis = d3.axisLeft(vis.yScale);
 
-        vis.svg = d3.select(vis.config.parentElement)
-            .append('svg')
-            .attr('width', vis.config.containerWidth)
-            .attr('height', vis.config.containerHeight)
-            .append('g')
-            .attr('transform', `translate(${vis.config.margin.left},${vis.config.margin.top})`);
-    
-        vis.svg.append('g')
+        vis.chart.append('g')
             .attr('class', 'x-axis')
             .attr('transform', `translate(0, ${vis.height})`);
-        vis.svg.append('g')
+        vis.chart.append('g')
             .attr('class', 'y-axis');
 
         // Axis labels
-        vis.svg.append('text')
+        vis.chart.append('text')
             .attr('class', 'axis-label')
             .attr('text-anchor', 'middle')
             .attr('x', vis.width / 2)
             .attr('y', vis.height + vis.config.margin.bottom - 18)
             .text('Week');
 
-        vis.svg.append('text')
+        vis.chart.append('text')
             .attr('class', 'axis-label')
             .attr('text-anchor', 'middle')
             .attr('transform', `translate(${-vis.config.margin.left + 15}, ${vis.height / 2}) rotate(-90)`)
@@ -74,7 +77,7 @@ class Timeline {
             .x(d => vis.xScale(d.date))
             .y(d => vis.yScale(d.count));
 
-        vis.svg.append('path')
+        vis.chart.append('path')
             .attr('class', 'line')
             .attr('fill', 'none')
             .attr('stroke', 'steelblue') // this is the same color as the header block. 
@@ -139,16 +142,16 @@ class Timeline {
         }
 
         // call axes
-        vis.svg.select('.x-axis').call(vis.xAxis);
-        vis.svg.select('.y-axis').call(vis.yAxis);
+        vis.chart.select('.x-axis').call(vis.xAxis);
+        vis.chart.select('.y-axis').call(vis.yAxis);
 
         // draw the line
-        vis.svg.select('.line')
+        vis.chart.select('.line')
             .datum(vis.aggregatedData)
             .attr('d', vis.line);
 
         // draw points on each week so that we have a place to attach the tooltips
-        vis.svg.selectAll('.timeline-point')
+        vis.chart.selectAll('.timeline-point')
             .data(vis.aggregatedData, d => +d.date)
             .join('circle')
             .attr('class', 'timeline-point')
@@ -192,6 +195,11 @@ class Timeline {
                     leafletMap.setTransientHeatmapFilter(null);
                 }
                 d3.select('#tooltip').style('opacity', 0);
+            })
+            .on('click', (event, d) => {
+                // persist selection of service requests in the given week bin
+                const srNumbersInWeek = vis.weekToSRsMap.get(+d.date) || [];
+                handleSelections(srNumbersInWeek);
             });
 
         highlightRequest();

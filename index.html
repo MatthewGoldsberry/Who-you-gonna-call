@@ -16,6 +16,7 @@
                 <h1>Visual Disorder in Cincinnati</h1>
                 <span class="header-subtitle">As Documented Through 311 Non-Emergency Service Requests</span>
             </div>
+            <button id="resetSelectionBtn" class="reset-selection-button" style="display:none;">&#x2715; Clear Selection</button>
             <p><i>Matthew Goldsberry & Isaac Dowdy</i></p>
         </header>
     
@@ -57,15 +58,25 @@
         </div>
 
         <div class="chart-column">
-            <svg id="requests-per-neighborhood" class="chart-container"></svg>
-            <svg id="request-methods" class="chart-container"></svg>
-            <svg id="service-dept-distribution" class="chart-container"></svg>
-            <svg id="priority-distribution" class="chart-container"></svg>
-            <svg id="service-type-distribution" class="chart-container"></svg>
+            <div class="chart-wrapper">
+                <svg id="requests-per-neighborhood" class="chart-container"></svg>
+            </div>
+            <div class="chart-wrapper">
+                <svg id="request-methods" class="chart-container"></svg>
+            </div>
+            <div class="chart-wrapper">
+                <svg id="service-dept-distribution" class="chart-container"></svg>
+            </div>
+            <div class="chart-wrapper">
+                <svg id="priority-distribution" class="chart-container"></svg>
+            </div>
+            <div class="chart-wrapper">
+                <svg id="service-type-distribution" class="chart-container"></svg>
+            </div>
         </div>
 
         <div class="timeline-zone">
-            <div id="timeline-chart"></div>
+            <svg id="timeline-chart" class="timeline-container"></svg>
         </div>
 
     </div>

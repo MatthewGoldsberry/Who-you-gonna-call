@@ -16,6 +16,10 @@ class BarChart {
      *  - yAxisLabel: y-axis label
      *  - yScaleType: type of scaling to apply to y axis
      *  - xAxisTickRotation: axis rotations to cleanly fit x axis labels
+     *  - labelMap: optional map of category value to display label for axis ticks
+     *  - wrapLabels: if true, splits tick labels on spaces into multiple tspan lines
+     *  - colorScale: D3 scale function mapping category value to color
+     *  - colorByKey: the colorBy value that activates colorScale
      * @param {Array} _data
      */
     constructor(_config, _data) {
@@ -33,6 +37,8 @@ class BarChart {
             xAxisTickRotation: _config.xAxisTickRotation || 'horizontal',
             labelMap: _config.labelMap || null,
             wrapLabels: _config.wrapLabels || false,
+            colorScale: _config.colorScale || null,
+            colorByKey: _config.colorByKey || null,
         }
         this.data = _data;
         this.initVis();
@@ -99,6 +105,33 @@ class BarChart {
             .attr('x', 0 - (vis.height / 2))
             .style('text-anchor', 'middle')
             .text(vis.config.yAxisLabel);
+    
+        // scale selector dropdown
+        // inject into chart-wrapper so this dropdown will travel with the swap
+        const wrapper = vis.svg.node().parentElement;
+        const controls = document.createElement('div');
+        controls.className = 'chart-controls';
+
+        // create dropdown element with a change event handler
+        const scaleSelect = document.createElement('select');
+        scaleSelect.className = 'scale-selector';
+        scaleSelect.title = 'Y-axis scale type';
+        ['linear', 'log', 'sqrt'].forEach((scale) => {
+            const opt = document.createElement('option');
+            opt.value = scale;
+            opt.textContent = scale;
+            if (scale === vis.config.yScaleType) opt.selected = true;
+            scaleSelect.appendChild(opt);
+        });
+        scaleSelect.addEventListener('change', e => {
+            // on change read in the new value and update the bar chart
+            vis.config.yScaleType = e.target.value;
+            vis.updateVis();
+        });
+
+        // append the swap button container and scale selector to the wrapper
+        wrapper.appendChild(controls);
+        wrapper.appendChild(scaleSelect);
 
         // render initial visualization
         vis.updateVis();
@@ -162,7 +195,9 @@ class BarChart {
             .attr('height', d => vis.height - vis.yScale(d.count)) 
             .attr('y', d => vis.yScale(d.count))
             .attr('x', d => vis.xScale(d.category))
-            .attr('fill', 'steelblue')
+            .attr('fill', d => (vis.config.colorScale && leafletMap && leafletMap.colorBy === vis.config.colorByKey)
+                ? vis.config.colorScale(d.category)
+                : 'steelblue')
             .attr('stroke', 'black')
             .attr('class', (d, i) => `bar bar-bin-${i}`);
 
@@ -234,6 +269,11 @@ class BarChart {
                 // remove tooltip
                 d3.select('#tooltip').style('opacity', 0);
             })
+            .on('click', (event, d) => {
+                // persist selection of service requests in the given bin
+                const srNumbersInBin = vis.binToSRsMap.get(d.category) || [];
+                handleSelections(srNumbersInBin);
+            })
 
         // update axis labels and ticks; apply abbreviated labels if a labelMap was provided
         vis.xAxis = d3.axisBottom(vis.xScale)
@@ -242,8 +282,7 @@ class BarChart {
 
         // update axis
         vis.xAxisG.call(vis.xAxis);
-        const xTicks = vis.xAxisG.selectAll('.tick text')
-            .style('font-size', '0.85rem');
+        const xTicks = vis.xAxisG.selectAll('.tick text');
 
         // if wrapLabels, split each tick label at its spaces and put each word into a separate line
         if (vis.config.wrapLabels) {

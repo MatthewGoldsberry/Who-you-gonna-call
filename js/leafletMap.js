@@ -170,6 +170,10 @@ class LeafletMap {
         unhighlightRequest();
         d3.select('#tooltip').style('opacity', 0);
       })
+      .on('click', function(event, d) {
+        // persist the selection of dot
+        handleSelection(d.SR_NUMBER);
+      })
 
     // handler here for updating the map, as you zoom in and out           
     vis.theMap.on("zoomend", function () {
@@ -548,6 +552,11 @@ class LeafletMap {
 
           // rerender dots
           vis.updateVis();
+
+          // rerender service type bar chart to reflect updated colors
+          if (typeof serviceTypeDistribution !== 'undefined' && serviceTypeDistribution) {
+            serviceTypeDistribution.renderVis();
+          }
         });
 
       // visibility checkbox
