@@ -235,7 +235,10 @@ class Timeline {
 
         if (!selection) {
             vis.currentBrushSelection = null;
+            vis.currentBrushDateRange = null;
             leafletMap.clearDateRangeFilter();
+            selectedRequests = [];
+            highlightRequests();
             return;
         }
 
@@ -245,6 +248,15 @@ class Timeline {
         vis.currentBrushSelection = [x0, x1];
         vis.currentBrushDateRange = [startDate, endDate];
 
+        const brushedSRs = vis.data
+            .filter(d => {
+                const created = new Date(d.DATE_CREATED);
+                return !isNaN(created) && created >= startDate && created <= endDate;
+            })
+            .map(d => d.SR_NUMBER);
+
+        selectedRequests = brushedSRs;
+        highlightRequests();
         leafletMap.filterByDateRange(startDate, endDate);
     }
 }
