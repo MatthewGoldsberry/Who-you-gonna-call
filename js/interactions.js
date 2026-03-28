@@ -189,6 +189,16 @@ function resetSelection() {
         leafletMap.selectedData = [];
         leafletMap.brushG.call(leafletMap.brush.move, null);
     }
+
+    // also clear any active timeline brush selection
+    if (timeline && (timeline.currentBrushSelection || timeline.currentBrushDateRange)) {
+        timeline.currentBrushSelection = null;
+        timeline.currentBrushDateRange = null;
+        timeline.brushG.call(timeline.brush.move, null);
+        if (leafletMap) {
+            leafletMap.clearDateRangeFilter();
+        }
+    }
 }
 
 /**

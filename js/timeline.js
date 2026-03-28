@@ -18,6 +18,8 @@ class Timeline {
         }
 
         this.data = _data;
+        this.currentBrushSelection = null;
+        this.currentBrushDateRange = null;
         this.initVis();
     }
 
@@ -80,9 +82,18 @@ class Timeline {
         vis.chart.append('path')
             .attr('class', 'line')
             .attr('fill', 'none')
-            .attr('stroke', '#2a6dff') // this is the same color as the header block.
+            .attr('stroke', 'steelblue') // this is the same color as the header block. 
             // I picked it for consistency but it might be too bright for the line, we can think about this later
             .attr('stroke-width', 1.5);
+
+        vis.brushG = vis.chart.append('g')
+            .attr('class', 'brush timeline-brush');
+
+        vis.brush = d3.brushX()
+            .extent([[0, 0], [vis.width, vis.height]])
+            .on('end', event => vis.handleTimelineBrush(event));
+
+        vis.brushG.call(vis.brush);
         }
 
     /**
@@ -156,9 +167,11 @@ class Timeline {
             .join('circle')
             .attr('class', 'timeline-point')
             .attr('r', 4)
-            .attr('fill', '#2a6dff')
+            .attr('fill', 'steelblue')
             .attr('cx', d => vis.xScale(d.date))
             .attr('cy', d => vis.yScale(d.count))
+            .attr('stroke', 'black')
+            .attr('stroke-width', 0.5)
             .on('mouseover', function(event, d) {
                 const weekStart = d.date;
 
@@ -200,6 +213,50 @@ class Timeline {
                 handleSelections(srNumbersInWeek);
             });
 
+        // keep brush bounds if the timeline is redrawn after a filter update
+        if (vis.currentBrushDateRange) {
+            const [start, end] = vis.currentBrushDateRange;
+            const x0 = vis.xScale(start);
+            const x1 = vis.xScale(end);
+            vis.currentBrushSelection = [x0, x1];
+            vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+        } else if (vis.currentBrushSelection) {
+            vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+        }
+
         highlightRequest();
+    }
+
+    handleTimelineBrush(event) {
+        let vis = this;
+        const selection = event.selection;
+
+        if (!leafletMap) return;
+
+        if (!selection) {
+            vis.currentBrushSelection = null;
+            vis.currentBrushDateRange = null;
+            leafletMap.clearDateRangeFilter();
+            selectedRequests = [];
+            highlightRequests();
+            return;
+        }
+
+        const [x0, x1] = selection;
+        const startDate = vis.xScale.invert(Math.min(x0, x1));
+        const endDate = vis.xScale.invert(Math.max(x0, x1));
+        vis.currentBrushSelection = [x0, x1];
+        vis.currentBrushDateRange = [startDate, endDate];
+
+        const brushedSRs = vis.data
+            .filter(d => {
+                const created = new Date(d.DATE_CREATED);
+                return !isNaN(created) && created >= startDate && created <= endDate;
+            })
+            .map(d => d.SR_NUMBER);
+
+        selectedRequests = brushedSRs;
+        highlightRequests();
+        leafletMap.filterByDateRange(startDate, endDate);
     }
 }
