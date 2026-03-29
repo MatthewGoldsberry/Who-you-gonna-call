@@ -89,6 +89,20 @@ class LeafletMap {
     vis.overlay = d3.select(vis.theMap.getPanes().overlayPane)
     vis.svg = vis.overlay.select('svg').attr("pointer-events", "auto")
 
+    vis.brushG = vis.svg.append("g")
+      .attr("class", "brush");
+
+    // Initialize the D3 brush behavior
+    vis.brush = d3.brush()
+      .extent([[-100000, -100000], [100000, 100000]]) // allow brushing box to be moved past the bounds of the visual map
+      .filter(event => vis.brushingEnabled && !event.button)
+      .on('start brush end', function(event) {
+        vis.handleBrush(event);
+      });
+
+    vis.brushG.call(vis.brush);
+    vis.brushG.style('display', 'none');
+
     // A canvas overlay is used for the heatmap, always present but only visible when toggled on
     vis.heatmapCanvas = vis.overlay.append('canvas')
       .attr('class', 'heatmap-canvas')
