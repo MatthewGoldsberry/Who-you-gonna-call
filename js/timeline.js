@@ -237,7 +237,11 @@ class Timeline {
             vis.currentBrushSelection = null;
             vis.currentBrushDateRange = null;
             leafletMap.clearDateRangeFilter();
-            selectedRequests = [];
+            if (leafletMap.currentBrushSelection && leafletMap.selectedData.length > 0) {
+                selectedRequests = leafletMap.selectedData.map(d => d.SR_NUMBER);
+            } else {
+                selectedRequests = [];
+            }
             highlightRequests();
             return;
         }

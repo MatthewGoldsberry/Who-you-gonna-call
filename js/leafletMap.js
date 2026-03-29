@@ -284,11 +284,22 @@ class LeafletMap {
     let vis = this;
     const selection = event.selection;
 
-    // If selection is null, only clear on brush end.
+    // If selection is null, only clear the map brush state.
     if (!selection) {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
-      resetSelection();
+      if (timeline && timeline.currentBrushDateRange) {
+        const [startDate, endDate] = timeline.currentBrushDateRange;
+        selectedRequests = timeline.data
+          .filter(d => {
+            const created = new Date(d.DATE_CREATED);
+            return !isNaN(created) && created >= startDate && created <= endDate;
+          })
+          .map(d => d.SR_NUMBER);
+      } else {
+        selectedRequests = [];
+      }
+      highlightRequests();
       vis.config.onSelectionChange(null);
       vis.updateHeatmap();
       return;
@@ -539,20 +550,11 @@ class LeafletMap {
     d3.select('#my-map').classed('brush-enabled', vis.brushingEnabled);
 
     if (vis.brushingEnabled) {
-      // Disable all map interactions while in brush mode to avoid conflicts
-      // TODO could be improved to find a way to allow the user to interact with the map in brush mode
+      // Disable map interactions that conflict with brush drawing.
       vis.theMap.dragging.disable();
-      vis.theMap.boxZoom.disable();
-      vis.theMap.doubleClickZoom.disable();
-      vis.theMap.scrollWheelZoom.disable();
-      vis.theMap.touchZoom.disable();
       vis.theMap.keyboard.disable();
     } else {
       vis.theMap.dragging.enable();
-      vis.theMap.boxZoom.enable();
-      vis.theMap.doubleClickZoom.enable();
-      vis.theMap.scrollWheelZoom.enable();
-      vis.theMap.touchZoom.enable();
       vis.theMap.keyboard.enable();
 
       vis.currentBrushSelection = null;
