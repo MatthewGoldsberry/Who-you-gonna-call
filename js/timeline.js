@@ -91,6 +91,7 @@ class Timeline {
 
         vis.brush = d3.brushX()
             .extent([[0, 0], [vis.width, vis.height]])
+            .filter(event => !event.button && !(leafletMap && leafletMap.currentBrushSelection))
             .on('end', event => vis.handleTimelineBrush(event));
 
         vis.brushG.call(vis.brush);
@@ -233,9 +234,16 @@ class Timeline {
 
         if (!leafletMap) return;
 
+        const brushBtn = document.getElementById('brushToggle');
+
         if (!selection) {
             vis.currentBrushSelection = null;
             vis.currentBrushDateRange = null;
+            // Re-enable the map brush button now that the timeline brush is cleared
+            if (brushBtn) {
+                brushBtn.disabled = false;
+                brushBtn.title = '';
+            }
             leafletMap.clearDateRangeFilter();
             if (leafletMap.currentBrushSelection && leafletMap.selectedData.length > 0) {
                 selectedRequests = leafletMap.selectedData.map(d => d.SR_NUMBER);
@@ -244,6 +252,17 @@ class Timeline {
             }
             highlightRequests();
             return;
+        }
+
+        // Timeline brush is now active: block the map brush button
+        if (brushBtn) {
+            brushBtn.disabled = true;
+            brushBtn.title = 'Clear the timeline brush first';
+        }
+        // If brush mode was already on, turn it off so the map cursor reverts to normal
+        if (leafletMap.brushingEnabled) {
+            leafletMap.setBrushingEnabled(false);
+            d3.select('#brushToggle').classed('active', false).text('Brush Mode: Off');
         }
 
         const [x0, x1] = selection;
