@@ -239,6 +239,10 @@ class Timeline {
         highlightRequest();
     }
 
+    /**
+     * Handles brush events on the timeline by filtering the map
+     * @param {*} event 
+     */
     handleTimelineBrush(event) {
         let vis = this;
         const selection = event.selection;
@@ -267,7 +271,7 @@ class Timeline {
         
             highlightRequests();
             if (leafletMap) leafletMap.updateHeatmap();
-            
+
             return;
         }
 
@@ -304,6 +308,11 @@ class Timeline {
         }
     }
 
+    /**
+     * Grabs the current brushed dates and updates the label below the timeline
+     * @param {Date} startDate 
+     * @param {Date} endDate 
+     */
     updateBrushRangeLabel(startDate, endDate) {
         let vis = this;
         if (!vis.brushRangeLabel) return;

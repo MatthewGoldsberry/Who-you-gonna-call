@@ -360,7 +360,10 @@ class LeafletMap {
         vis.updateHeatmap();
     }
   
-    // Used to resize the heatmap canvas element to match the leaflet map
+    /**
+     * Resizes the heatmap canvas to match the current map size
+     * Repositions it to align with the map's top-left corner.
+     */
     resizeHeatmapCanvas() {
         let vis = this;
         const mapSize = vis.theMap.getSize();
@@ -376,7 +379,10 @@ class LeafletMap {
         L.DomUtil.setPosition(vis.heatmapCanvas.node(), topLeft);
     }
   
-    // Heatmap color stuff
+    /**
+     * Heatmap color palette generator that creates a 256-color gradient from blue to red 
+     * returns it as an array of RGBA values for use in the heatmap rendering.
+     */
     createHeatmapPalette() {
         const paletteCanvas = document.createElement('canvas');
         paletteCanvas.width = 256;
@@ -396,11 +402,19 @@ class LeafletMap {
         return paletteCtx.getImageData(0, 0, 256, 1).data;
     }
   
+    /**
+     * Clears the heatmap canvas
+     */
     clearHeatmap() {
         let vis = this;
         vis.heatmapCtx.clearRect(0, 0, vis.theMap.getSize().x, vis.theMap.getSize().y);
     }
   
+    /**
+     * Sets heatmap mode on or off. When enabled, the heatmap canvas is shown and the individual dots are hidden,
+     * the underlying data and brush state remain intact for easy toggling between modes.
+     * @param {boolean} enabled 
+     */
     setHeatmapEnabled(enabled) {
         // Toggling heatmap mode only changes presentation; the underlying data and brush state are preserved.
         this.heatmapEnabled = enabled;
@@ -414,18 +428,30 @@ class LeafletMap {
             this.updateHeatmap();
         }
     }
-  
+    
+    /**
+     * Toggles heatmap mode on/off and returns the new state.
+     */
     toggleHeatmapMode() {
         this.setHeatmapEnabled(!this.heatmapEnabled);
         return this.heatmapEnabled;
     }
   
+    /**
+     * Sets a temporary filter on the heatmap to only show data points matching the provided list of SR_NUMBERs.
+     * @param {Array<string>} srNumbers 
+     */
     setTransientHeatmapFilter(srNumbers = null) {
         // Linked hover interactions provide a list of SR_NUMBERs to preview in the heatmap temporarily.
         this.transientHeatmapFilter = srNumbers && srNumbers.length > 0 ? new Set(srNumbers) : null;
         this.updateHeatmap();
     }
   
+    /**
+     * Filters the data by a date range.
+     * @param {Date} startDate 
+     * @param {Date} endDate 
+     */
     filterByDateRange(startDate, endDate) {
         let vis = this;
 
@@ -444,10 +470,16 @@ class LeafletMap {
         vis.updateVis();
     }
   
+    /**
+     * Clears any active date range filter
+     */
     clearDateRangeFilter() {
         this.filterByDateRange(null, null);
     }
   
+    /**
+     * Gets the subset of data that should be visualized in the heatmap based on the current selections
+     */
     getHeatmapData() {
         let vis = this;
         const baseData = vis.currentBrushSelection ? vis.selectedData : vis.data;
@@ -477,6 +509,9 @@ class LeafletMap {
         return visibleData;
     }
   
+    /**
+     * Update the heatmap 
+     */
     updateHeatmap() {
         let vis = this;
     
