@@ -1,68 +1,87 @@
 # Who-you-gonna-call
 
-An interactive visualization to help people understand 311 (Non-emergency) calls
+An interactive data visualization dashboard for exploring Cincinnati 311 non-emergency service requests — mapping visual disorder (dumping, graffiti, littering, tires, trash, and vacant buildings) across the city's neighborhoods.
 
-#### [View Live Application](https://visual-disorder-in-cincinnati.vercel.app/)
+**[View Live Application](https://visual-disorder-in-cincinnati.vercel.app/)** &nbsp;|&nbsp; **[View Documentation](https://matthewgoldsberry.github.io/portfolio/projects/who-you-gonna-call/)**
 
-## Plan For Collaboration
+---
 
-Time of Meetings: After class on Wednesdays
+## Stack
 
-Coordination and Tracking: High level and communication SMS
+- **D3.js v6** — bar charts, timeline, and brushing interactions
+- **Leaflet.js**  — interactive map with D3 SVG overlay
+- **Vanilla HTML/CSS/JS** — no framework or build step required
+- **Python** — data preprocessing and subset creation
 
-## Early Brainstorming 
+---
 
-[Project Description](https://uc.instructure.com/courses/1828856/pages/project-2-who-you-gonna-call-3-1-1?module_item_id=78421809)
+## Project Structure
 
-### Level 1
+```text
+Who-you-gonna-call/
+├── index.html                          # Entry point
+├── js/
+│   ├── main.js                         # App init, global state, render pipeline
+│   ├── leafletMap.js                   # Map class (dots, brush, heatmap, color schemes)
+│   ├── barchart.js                     # Bar chart class
+│   ├── timeline.js                     # Timeline/area chart class
+│   ├── interactions.js                 # UI event handlers (dropdowns, legend, swap)
+│   ├── helpers.js                      # Utility functions
+│   ├── d3.v6.min.js
+│   ├── leaflet.js.map
+│   └── leaflet.js
+├── css/
+│   ├── style.css                       # Custom CSS definitions
+│   └── leaflet.css                     # Leaflet-specific CSS definitions
+└── data/
+    ├── Cincinnati_311_..._subset.csv   # Filtered dataset (used by app)
+    ├── Cincinnati_311_....csv          # Full dataset
+    ├── subset_creation.py              # Generates the subset from the full CSV
+    ├── data_exploration.py             # Generates lists of values in specific columns
+    ├── requirements.txt                # Listing of Python Packages used in scripts
+    └── data_info.md                    # Data schema and transformation notes
+```
 
-* Utilize class example to get this up an going
-* Switching up some of the data and controls to be specific to the goals of this project
-* For default zoom and max zoom out will be the same size; where it is controled by the data points + some buffer around them
+---
 
-### Level 2 
+## Running Locally
 
-* We will go with a line chart
-* Have multiple lines for the different request types (with ability to focus selected one)
+The app is static and will need to be hosted by an HTTP server.
 
-### Level 3
+```bash
+git clone https://github.com/MatthewGoldsberry/Who-you-gonna-call.git
+cd Who-you-gonna-call
+python -m http.server 8000
+```
 
-* Start with all as bar charts, if we see that another visualization could better suite that data we will change it then
+Then open `http://localhost:8000` in your browser.
 
-### Level 4 
+Any static file server works (`npx http-server`, Live Server in VS Code, etc.).
 
-* Revamp the code from the previous project to be applicable in this one
+---
 
-### Level 5 
+## Data
 
-* Start with d3.brush and see where that gets us
+The app loads `data/Cincinnati_311_..._subset.csv` on startup. This subset was filtered from the full `data/Cincinnati_311_(Non-Emergency)_Service_Requests_20260227.csv` dataset to include six consolidated service types across 50 neighborhoods.
 
-### Level 6
+To regenerate the subset from the full CSV:
 
-* Make select boxes for chosing the different services
-* Probably will pick a certain subset due to the sheer amount of them
-* For this added visualization we are also thinking this will be a barchart
+```bash
+cd data
+python -m venv .venv
+.venv\Scripts\activate  # Mac: source .venv/bin/activate
+pip install -r requirements.txt
+python subset_creation.py
+```
 
-### Level 7 
+See [data/data_info.md](data/data_info.md) for the full schema and transformation details.
 
-* Add a toggle for view in map
+---
 
-### Level 8
+## Deployment
 
-* Maybe add more map views?
-* Add way to switch bar charts into main view and back 
+The live app is deployed on Vercel. Pushing to `main` triggers an automatic redeploy.
 
+---
 
-## Early Layout Sketches
-
-At this prelimiary stage we have 2 different ideas for the layout of the visualizations as seen below:
-
-### Option 1: Two Column Approach
-
-<img width="1142" height="719" alt="image" src="https://github.com/user-attachments/assets/2b6d9f43-29e8-4b2b-b638-1ec76cb7a29d" />
-
-### Option 2: One Column Approach
-
-<img width="1178" height="958" alt="image" src="https://github.com/user-attachments/assets/a3eb103b-2d28-4588-8c9b-83154f27fe7a" />
-
-> **NOTE** In the event the bar charts are two small to collect fine details, we might add an interaciton where if you click an expand button on them, the will flip places with the map to take up more visual room. 
+Contributors: Matthew Goldsberry & Isaac Dowdy
