@@ -75,10 +75,11 @@ function highlightRequests(hoveredSRs = []) {
             .classed('focused', false)
             .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')); });
 
-        // increase size of the focussed dots 
+        // increase size of the focussed dots and raise them above unfocused dots in SVG DOM order
         leafletMap.Dots.filter(d => SRsToFocusSet.has(d.SR_NUMBER))
             .classed('focused', true)
-            .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')) + 2; });
+            .attr('r', function() { return parseFloat(d3.select(this).attr('base-r')) + 2; })
+            .raise();
     }
 
     // update bar charts to highlight categories containing the focused Service Requests
