@@ -109,7 +109,7 @@ class LeafletMap {
     // Initialize the D3 brush behavior
     vis.brush = d3.brush()
       .extent([[-100000, -100000], [100000, 100000]]) // allow brushing box to be moved past the bounds of the visual map
-      .filter(event => vis.brushingEnabled && !event.button)
+      .filter(event => vis.brushingEnabled && !event.button && !(timeline && timeline.currentBrushSelection))
       .on('end', function(event) {
         vis.handleMapBrush(event);
       });
@@ -289,6 +289,7 @@ class LeafletMap {
     if (!selection) {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
+      if (timeline) timeline.brushG.classed('timeline-brush-blocked', false);
       if (timeline && timeline.currentBrushDateRange) {
         const [startDate, endDate] = timeline.currentBrushDateRange;
         selectedRequests = timeline.data
@@ -306,6 +307,8 @@ class LeafletMap {
       return;
     }
 
+    // Block the timeline brush while the map has an active selection
+    if (timeline) timeline.brushG.classed('timeline-brush-blocked', true);
     // convert pixel coords to geographic bounds so the selection is zoom-invariant
     const [[x0, y0], [x1, y1]] = selection;
     const latLng0 = vis.theMap.layerPointToLatLng([x0, y0]);
@@ -575,6 +578,7 @@ class LeafletMap {
       vis.currentBrushSelection = null;
       vis.selectedData = [];
       vis.brushG.call(vis.brush.move, null);
+      if (timeline) timeline.brushG.classed('timeline-brush-blocked', false);
       resetSelection();
       vis.config.onSelectionChange(null);
       vis.updateHeatmap();

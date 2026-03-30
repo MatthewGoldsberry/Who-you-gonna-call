@@ -461,6 +461,14 @@ body {
   cursor: crosshair;
 }
 
+.brush-button:disabled {
+  opacity: 0.4;
+}
+
+.timeline-brush-blocked .overlay {
+  cursor: auto !important;
+}
+
 .heatmap-canvas {
   z-index: 350;
   opacity: 0.8;
