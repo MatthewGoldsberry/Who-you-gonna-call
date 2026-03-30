@@ -243,6 +243,7 @@ class Timeline {
                 selectedRequests = [];
             }
             highlightRequests();
+            if (leafletMap) leafletMap.updateHeatmap();
             return;
         }
 
@@ -261,6 +262,9 @@ class Timeline {
 
         selectedRequests = brushedSRs;
         highlightRequests();
-        leafletMap.filterByDateRange(startDate, endDate);
+        if (leafletMap) {
+            leafletMap.clearDateRangeFilter();
+            leafletMap.updateHeatmap();
+        }
     }
 }
