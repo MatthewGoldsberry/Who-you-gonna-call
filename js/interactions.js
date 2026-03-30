@@ -165,6 +165,9 @@ function handleSelections(srNumbers) {
     }
 
     highlightRequests();
+    if (leafletMap) {
+        leafletMap.updateHeatmap();
+    }
 }
 
 /**
@@ -181,6 +184,9 @@ function handleSelection(srNumber) {
 function resetSelection() {
     selectedRequests = [];
     unhighlightRequest();
+    if (leafletMap) {
+        leafletMap.updateHeatmap();
+    }
     document.getElementById('resetSelectionBtn').style.display = 'none';
 
     // clear brush box if one is drawn
