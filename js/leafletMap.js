@@ -454,12 +454,17 @@ class LeafletMap {
       });
     }
 
-    if (!vis.transientHeatmapFilter) {
-      return visibleData;
+    if (vis.transientHeatmapFilter) {
+      // Get subset of data matching the temporary hover filter so that the heatmap can reflect linked interactions.
+      return visibleData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
     }
 
-    // Get subset of data matching the filter so that the heatmap can reflect the linked interactions from leaflet
-    return visibleData.filter(d => vis.transientHeatmapFilter.has(d.SR_NUMBER));
+    if (typeof selectedRequests !== 'undefined' && selectedRequests.length > 0) {
+      const selectedSet = new Set(selectedRequests);
+      return visibleData.filter(d => selectedSet.has(d.SR_NUMBER));
+    }
+
+    return visibleData;
   }
 
   updateHeatmap() {
