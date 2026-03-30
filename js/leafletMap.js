@@ -268,6 +268,7 @@ class LeafletMap {
 
 
     if (vis.currentBrushSelection) {
+      vis.refreshBrushExtent();
       vis.applySelectionFromBounds(vis.currentBrushSelection, true);
     }
     // update heatmap on update to the map, even if hidden
@@ -308,27 +309,33 @@ class LeafletMap {
 
     // Block the timeline brush while the map has an active selection
     if (timeline) timeline.brushG.classed('timeline-brush-blocked', true);
-    vis.currentBrushSelection = selection;
-    vis.applySelectionFromBounds(selection, true);
+    // convert pixel coords to geographic bounds so the selection is zoom-invariant
+    const [[x0, y0], [x1, y1]] = selection;
+    const latLng0 = vis.theMap.layerPointToLatLng([x0, y0]);
+    const latLng1 = vis.theMap.layerPointToLatLng([x1, y1]);
+    vis.currentBrushSelection = [[latLng0.lat, latLng0.lng], [latLng1.lat, latLng1.lng]];
+    vis.applySelectionFromBounds(vis.currentBrushSelection, true);
   }
 
   /**
    * Applies selected styling to dots and optionally notifies linked charts.
    * Computes which data records fall within the brush rectangle bounds
-   * @param {Array<Array<number>>} selection - [[x0, y0], [x1, y1]] brush bounds in screen coords
+   * @param {Array<Array<number>>} selection - [[lat0, lng0], [lat1, lng1]] geographic bounds
    * @param {boolean} notify - if true, calls onSelectionChange callback with selected data
    */
   applySelectionFromBounds(selection, notify = false) {
     let vis = this;
-    const [[x0, y0], [x1, y1]] = selection;
+    const [[lat0, lng0], [lat1, lng1]] = selection;
+    const minLat = Math.min(lat0, lat1);
+    const maxLat = Math.max(lat0, lat1);
+    const minLng = Math.min(lng0, lng1);
+    const maxLng = Math.max(lng0, lng1);
 
-    // Test each data record to see if it falls within the brush rectangle
+    // Test each data record to see if it falls within the geographic bounds
     const selectedSet = new Set();
     vis.data.forEach(d => {
-      // Convert lat/lon to current map screen coordinates
-      const point = vis.theMap.latLngToLayerPoint([d.latitude, d.longitude]);
-      // Check if point is inside the brush bounds
-      if (x0 <= point.x && point.x <= x1 && y0 <= point.y && point.y <= y1) {
+      if (minLat <= d.latitude && d.latitude <= maxLat &&
+          minLng <= d.longitude && d.longitude <= maxLng) {
         selectedSet.add(d);
       }
     });
@@ -534,9 +541,12 @@ class LeafletMap {
    */
   refreshBrushExtent() {
     let vis = this;
-    // If there's an active selection, move it to the new bounds
+    // Convert stored geographic bounds back to current pixel coords and redraw the visual box
     if (vis.currentBrushSelection) {
-      vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+      const [[lat0, lng0], [lat1, lng1]] = vis.currentBrushSelection;
+      const p0 = vis.theMap.latLngToLayerPoint([lat0, lng0]);
+      const p1 = vis.theMap.latLngToLayerPoint([lat1, lng1]);
+      vis.brushG.call(vis.brush.move, [[p0.x, p0.y], [p1.x, p1.y]]);
     }
   }
 
