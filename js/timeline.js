@@ -86,12 +86,22 @@ class Timeline {
             // I picked it for consistency but it might be too bright for the line, we can think about this later
             .attr('stroke-width', 1.5);
 
+        vis.brushRangeLabel = vis.chart.append('text')
+            .attr('class', 'brush-range-label')
+            .attr('text-anchor', 'middle')
+            .attr('x', vis.width / 2)
+            .attr('y', vis.height + vis.config.margin.bottom - 2)
+            .attr('fill', '#63738a')
+            .attr('font-size', '12px')
+            .attr('font-weight', '500')
+            .text('');
+
         vis.brushG = vis.chart.append('g')
             .attr('class', 'brush timeline-brush');
 
         vis.brush = d3.brushX()
             .extent([[0, 0], [vis.width, vis.height]])
-            .on('end', event => vis.handleTimelineBrush(event));
+            .on('start brush end', event => vis.handleTimelineBrush(event));
 
         vis.brushG.call(vis.brush);
         }
@@ -220,8 +230,11 @@ class Timeline {
             const x1 = vis.xScale(end);
             vis.currentBrushSelection = [x0, x1];
             vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+            vis.updateBrushRangeLabel(start, end);
         } else if (vis.currentBrushSelection) {
             vis.brushG.call(vis.brush.move, vis.currentBrushSelection);
+        } else {
+            vis.updateBrushRangeLabel(null, null);
         }
 
         highlightRequest();
@@ -237,6 +250,7 @@ class Timeline {
             vis.currentBrushSelection = null;
             vis.currentBrushDateRange = null;
             leafletMap.clearDateRangeFilter();
+            vis.updateBrushRangeLabel(null, null);
             if (leafletMap.currentBrushSelection && leafletMap.selectedData.length > 0) {
                 selectedRequests = leafletMap.selectedData.map(d => d.SR_NUMBER);
             } else {
@@ -262,9 +276,21 @@ class Timeline {
 
         selectedRequests = brushedSRs;
         highlightRequests();
+        vis.updateBrushRangeLabel(startDate, endDate);
         if (leafletMap) {
             leafletMap.clearDateRangeFilter();
             leafletMap.updateHeatmap();
         }
+    }
+
+    updateBrushRangeLabel(startDate, endDate) {
+        let vis = this;
+        if (!vis.brushRangeLabel) return;
+        if (!startDate || !endDate) {
+            vis.brushRangeLabel.text('');
+            return;
+        }
+
+        vis.brushRangeLabel.text(`Brushed: ${vis.weekLabelFormat(startDate)} → ${vis.weekLabelFormat(endDate)}`);
     }
 }
