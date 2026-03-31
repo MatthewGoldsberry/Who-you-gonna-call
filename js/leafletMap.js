@@ -165,8 +165,8 @@ class LeafletMap {
                 d3.select('#tooltip')
                     .style('opacity', 1)
                     .style('left', (event.pageX + 10) + 'px')
-          .style('top', (event.pageY + 10) + 'px')
-          .html(`
+                    .style('top', (event.pageY + 10) + 'px')
+                    .html(`
                         <div class="tooltip-content">
                             <strong>Type:</strong> ${d.SR_TYPE}<br>
                             <strong>Description:</strong> ${d.SR_TYPE_DESC}<br>
@@ -175,7 +175,6 @@ class LeafletMap {
                             <strong>Last Updated:</strong> ${d.DATE_LAST_UPDATE}
                         </div>
                     `);
-      
             })
             .on('mousemove', function(event) {
                 // position the tooltip
@@ -209,13 +208,13 @@ class LeafletMap {
         vis.brushG.call(vis.brush);
         vis.brushG.style('display', 'none');
     
-    // During a brush drag the overlay captures mousemove, so dot handlers stop firing.
-    // This listener on the brush group keeps the tooltip position updated during drags.
-    vis.brushG.on('mousemove.tooltip', function(event) {
-      d3.select('#tooltip')
-        .style('left', (event.pageX + 10) + 'px')
-        .style('top', (event.pageY + 10) + 'px');
-    });
+        // During a brush drag the overlay captures mousemove, so dot handlers stop firing.
+        // This listener on the brush group keeps the tooltip position updated during drags.
+        vis.brushG.on('mousemove.tooltip', function(event) {
+            d3.select('#tooltip')
+                .style('left', (event.pageX + 10) + 'px')
+                .style('top', (event.pageY + 10) + 'px');
+        });
 
         vis.theMap.on('resize', () => {
             vis.resizeHeatmapCanvas();
@@ -729,8 +728,8 @@ class LeafletMap {
                     d3.select('#tooltip')
                         .style('opacity', 1)
                         .style('left', (event.pageX + 10) + 'px')
-            .style('top', (event.pageY + 10) + 'px')
-            .html(`
+                        .style('top', (event.pageY + 10) + 'px')
+                        .html(`
                             <div class="tooltip-content">
                                 <strong>${type} includes:</strong><br>
                                 ${subtypes.map(s => `&bull; ${s}`).join('<br>')}
