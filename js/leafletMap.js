@@ -158,13 +158,15 @@ class LeafletMap {
             .attr('base-r', vis.dynamicRadius)
             .attr('r', vis.dynamicRadius)
             .attr('class', d => `dot request-${d.SR_NUMBER}`)
-            .on('mouseover', function (event, d) { 
+            .on('mouseover', function (event, d) {
                 highlightRequest(d.SR_NUMBER);
       
                 // create a tool tip
                 d3.select('#tooltip')
                     .style('opacity', 1)
-                    .html(`
+                    .style('left', (event.pageX + 10) + 'px')
+          .style('top', (event.pageY + 10) + 'px')
+          .html(`
                         <div class="tooltip-content">
                             <strong>Type:</strong> ${d.SR_TYPE}<br>
                             <strong>Description:</strong> ${d.SR_TYPE_DESC}<br>
@@ -175,7 +177,7 @@ class LeafletMap {
                     `);
       
             })
-            .on('mousemove', (event) => {
+            .on('mousemove', function(event) {
                 // position the tooltip
                 d3.select('#tooltip')
                     .style('left', (event.pageX + 10) + 'px')
@@ -207,6 +209,14 @@ class LeafletMap {
         vis.brushG.call(vis.brush);
         vis.brushG.style('display', 'none');
     
+    // During a brush drag the overlay captures mousemove, so dot handlers stop firing.
+    // This listener on the brush group keeps the tooltip position updated during drags.
+    vis.brushG.on('mousemove.tooltip', function(event) {
+      d3.select('#tooltip')
+        .style('left', (event.pageX + 10) + 'px')
+        .style('top', (event.pageY + 10) + 'px');
+    });
+
         vis.theMap.on('resize', () => {
             vis.resizeHeatmapCanvas();
             vis.refreshBrushExtent();
@@ -715,10 +725,12 @@ class LeafletMap {
             row.append('span')
                 .attr('class', 'legend-info-icon')
                 .html(infoSvg)
-                .on('mouseover', function() {
+                .on('mouseover', function(event) {
                     d3.select('#tooltip')
                         .style('opacity', 1)
-                        .html(`
+                        .style('left', (event.pageX + 10) + 'px')
+            .style('top', (event.pageY + 10) + 'px')
+            .html(`
                             <div class="tooltip-content">
                                 <strong>${type} includes:</strong><br>
                                 ${subtypes.map(s => `&bull; ${s}`).join('<br>')}
