@@ -11,8 +11,7 @@ class Timeline {
     constructor(_config, _data) {
         this.config = {
             parentElement: _config.parentElement,
-            containerWidth: _config.containerWidth || 1000, // These dimensions work great on my screen! 
-            // We might need to make them more responsive or adjust for other screens later
+            containerWidth: _config.containerWidth || 1000,
             containerHeight: _config.containerHeight || 150,
             margin: { top: 10, right: 20, bottom: 50, left: 60 }
         }
@@ -82,8 +81,7 @@ class Timeline {
         vis.chart.append('path')
             .attr('class', 'line')
             .attr('fill', 'none')
-            .attr('stroke', 'steelblue') // this is the same color as the header block. 
-            // I picked it for consistency but it might be too bright for the line, we can think about this later
+            .attr('stroke', 'steelblue')
             .attr('stroke-width', 1.5);
 
         vis.brushRangeLabel = vis.chart.append('text')
@@ -105,7 +103,7 @@ class Timeline {
             .on('start brush end', event => vis.handleTimelineBrush(event));
 
         vis.brushG.call(vis.brush);
-        }
+    }
 
     /**
      * Update the visualization
@@ -241,6 +239,10 @@ class Timeline {
         highlightRequest();
     }
 
+    /**
+     * Handles brush events on the timeline by filtering the map
+     * @param {*} event 
+     */
     handleTimelineBrush(event) {
         let vis = this;
         const selection = event.selection;
@@ -257,15 +259,19 @@ class Timeline {
                 brushBtn.disabled = false;
                 brushBtn.title = '';
             }
+
             leafletMap.clearDateRangeFilter();
             vis.updateBrushRangeLabel(null, null);
+
             if (leafletMap.currentBrushSelection && leafletMap.selectedData.length > 0) {
                 selectedRequests = leafletMap.selectedData.map(d => d.SR_NUMBER);
             } else {
                 selectedRequests = [];
             }
+        
             highlightRequests();
             if (leafletMap) leafletMap.updateHeatmap();
+
             return;
         }
 
@@ -302,6 +308,11 @@ class Timeline {
         }
     }
 
+    /**
+     * Grabs the current brushed dates and updates the label below the timeline
+     * @param {Date} startDate 
+     * @param {Date} endDate 
+     */
     updateBrushRangeLabel(startDate, endDate) {
         let vis = this;
         if (!vis.brushRangeLabel) return;
